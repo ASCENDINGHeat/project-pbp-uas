@@ -19,8 +19,6 @@ Referensi dokumentasi framework dan lain lain **(PENTING)**
 
 Git melacak perubahan kode, dan kita akan menggunakan alur kerja *branching* untuk memastikan setiap kontributor dapat bekerja secara independen dan aman.
 
-[Image of Git feature branch workflow]
-
 ### 1.1. Cloning (Mendapatkan Kode) ⬇️
 
 1.  **Buka Terminal** (*Command Prompt*, **Git Bash**, atau Terminal di Laragon).
