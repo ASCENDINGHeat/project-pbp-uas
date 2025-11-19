@@ -1,173 +1,167 @@
+Tentu, ini adalah panduan yang diperbarui dan lebih terperinci, dengan instruksi khusus untuk pengguna **Laragon** sebagai lingkungan *local web server*.
+
 -----
 
-## 🚀 Panduan Pemula: Pengembangan Kolaboratif (Laravel & Svelte)
+## 🚀 Panduan Pemula: Pengembangan Kolaboratif (Laragon Edition)
 
-Dokumen ini memberikan panduan langkah demi langkah yang penting untuk berkolaborasi dalam pengembangan proyek, yang menggunakan **Laravel** (untuk *backend*/API) dan **Svelte** (untuk antarmuka pengguna *frontend*).
+Proyek ini menggunakan arsitektur *monorepo* sederhana, memisahkan kode **Backend (Laravel API)** dan **Frontend (Svelte)** ke dalam subfolder yang berbeda. Ikuti langkah-langkah di bawah ini untuk menyiapkan lingkungan kerja Anda.
 
 -----
 
 ## 🤝 1. Memahami Git dan Kolaborasi
 
-Git adalah "sistem kontrol versi" yang melacak perubahan pada kode kita. Kolaborasi berarti beberapa orang dapat mengerjakan kode yang sama tanpa saling mengganggu.
+Git melacak perubahan kode, dan kita akan menggunakan alur kerja *branching* untuk memastikan setiap kontributor dapat bekerja secara independen dan aman.
+
+[Image of Git feature branch workflow]
 
 ### 1.1. Cloning (Mendapatkan Kode) ⬇️
 
-"Cloning" berarti membuat salinan lengkap proyek dari server pusat (seperti GitHub) ke komputer Anda.
-
-1.  **Buka Terminal/Command Prompt** (di sinilah Anda mengetik perintah).
-2.  **Jalankan perintah clone:**
+1.  **Buka Terminal** (*Command Prompt*, **Git Bash**, atau Terminal di Laragon).
+2.  **Clone (salin) seluruh repositori:**
     ```bash
     git clone [repository_url]
     ```
-    *Contoh: `git clone https://github.com/my-org/my-project.git`*
-3.  **Masuk ke folder proyek:**
+3.  **Masuk ke folder proyek utama:**
     ```bash
-    cd [nama-proyek]
+    cd project-pbp-uas # Ganti sesuai nama folder proyek Anda
     ```
-4.  **Periksa lokasi Anda (cabang/branch):** Kode utama yang stabil berada di cabang `main`.
+4.  **Pastikan Anda berada di cabang `main`** (cabang utama yang stabil):
     ```bash
     git checkout main
     ```
 
 ### 1.2. Alur Kerja Branching (Bekerja dengan Aman) 🌳
 
-Kita **tidak pernah** bekerja langsung di cabang `main`. Sebaliknya, kita membuat "cabang" terpisah untuk setiap tugas baru. Ini menjaga `main` tetap aman dari *bug* saat Anda bekerja.
+Setiap fitur atau perbaikan harus dikerjakan di cabang terpisah, bukan di `main`.
 
-1.  **Buat Cabang Baru:** Jalankan perintah ini untuk membuat cabang baru dan segera beralih ke sana.
-    *Gunakan nama yang deskriptif seperti `feature/tambah-form-kontak` atau `fix/bug-tombol-navigasi`.*
+1.  **Buat Cabang Baru (Branch):** Pilih nama yang jelas.
 
     ```bash
     git checkout -b feature/nama-tugas-anda
     ```
 
-    *Jika Anda hanya ingin beralih kembali ke cabang yang sudah ada:* `git checkout main`
+2.  **Commit Perubahan Anda (Menyimpan Pekerjaan):** Lakukan ini secara rutin.
 
-2.  **Commit Perubahan Anda (Menyimpan Pekerjaan Secara Lokal):** **Commit** seperti menyimpan cuplikan (snapshot) pekerjaan Anda. Lakukan ini sesering mungkin\!
-
-      * **Stage (Pilih) file:** Beri tahu Git file mana yang ingin Anda masukkan dalam cuplikan ini.
+      * **Stage (Pilih) file:**
         ```bash
         git add .
         ```
-        (Tanda `.` berarti "tambahkan semua file yang diubah di folder saat ini.")
-      * **Commit (Simpan) perubahan:** Tulis pesan singkat dan jelas yang menjelaskan apa yang Anda lakukan.
+      * **Commit (Simpan) dengan pesan yang jelas:**
         ```bash
-        git commit -m "feat: mengimplementasikan desain form pendaftaran pengguna"
+        git commit -m "feat: Menambahkan komponen tombol Login pada UI"
         ```
 
-3.  **Push Cabang Anda (Mengirim Pekerjaan ke Server) ⬆️:** Setelah Anda siap berbagi pekerjaan atau istirahat, kirim cabang Anda ke server pusat.
+3.  **Push Cabang Anda (Kirim ke Server) ⬆️:**
 
     ```bash
     git push origin feature/nama-tugas-anda
     ```
 
-4.  **Buat Pull Request (Meminta Penggabungan):** Ketika tugas Anda selesai, Anda membuka situs web repository (GitHub, GitLab, dll.) dan membuat **Pull Request (PR)**. Ini meminta rekan tim untuk meninjau perubahan Anda dan menggabungkan cabang Anda ke dalam `main`.
+4.  **Pull Request (PR):** Setelah selesai, buka PR di *platform* repositori untuk ditinjau dan digabungkan ke `main`.
 
-### 1.3. Menyinkronkan Cabang Utama (Tetap Terkini) 🔄
+5.  **Sinkronisasi `main`:** Selalu perbarui `main` Anda setelah ada penggabungan (*merge*).
 
-Setelah kode Anda (atau orang lain) digabungkan ke `main`, Anda perlu menarik perubahan tersebut ke komputer Anda.
-
-1.  **Beralih ke cabang `main`:**
     ```bash
     git checkout main
-    ```
-2.  **Pull (Ambil dan Gabungkan) perubahan terbaru:**
-    ```bash
     git pull origin main
     ```
-    Sekarang cabang `main` lokal Anda sudah terkini\!
 
 -----
 
-## 🛠️ 2. Penyiapan Laravel (Backend/API)
+## 🛠️ 2. Penyiapan Backend (Laravel API) - Khusus Laragon
 
-Laravel adalah *framework* PHP yang menangani data, akun pengguna, dan menyediakan API yang digunakan oleh *frontend* Svelte.
+Backend berada di dalam folder **`backend-API/`**. Ini menggunakan **PHP** dan **Composer**.
 
-### 2.1. Langkah-Langkah Instalasi Awal
+### 2.1. Instalasi dan Konfigurasi
 
-1.  **Instal Dependensi PHP:** Laravel mengandalkan alat bernama **Composer** untuk mengelola paket PHP yang diperlukan.
+1.  **Masuk ke folder Backend:**
+
+    ```bash
+    cd backend-API/
+    ```
+
+2.  **Instal Dependensi PHP (Composer):**
 
     ```bash
     composer install
     ```
 
-    *Ini mengunduh semua paket kode yang tercantum dalam `composer.lock`.*
-
-2.  **Buat File Lingkungan (*Environment File*):** File ini (`.env`) menyimpan **rahasia** dan **konfigurasi** spesifik untuk mesin lokal Anda (seperti kata sandi basis data). File ini diabaikan oleh Git, jadi rahasia tetap aman.
+3.  **Buat File Lingkungan (`.env`):**
 
     ```bash
     cp .env.example .env
     ```
 
-3.  **Langkah Penting: Konfigurasi Basis Data:** **Buka file `.env` yang baru dibuat** di editor teks Anda dan ubah baris-baris ini agar sesuai dengan pengaturan basis data lokal Anda:
+4.  **Konfigurasi Basis Data (Laragon Default):** **Buka file `.env`** dan sesuaikan pengaturan basis data Anda. Jika Anda menggunakan pengaturan *default* Laragon, kredensialnya sangat sederhana.
 
     ```
     DB_CONNECTION=mysql
     DB_HOST=127.0.0.1
     DB_PORT=3306
-    DB_DATABASE=nama_proyek_saya # <--- GANTI INI
-    DB_USERNAME=root           # <--- GANTI INI (contoh: 'root')
-    DB_PASSWORD=               # <--- GANTI INI (contoh: kata sandi Anda)
+    DB_DATABASE=nama_db_proyek_anda # <--- PASTIKAN DB INI SUDAH DIBUAT DI PHPMYADMIN/HEIDI SQL
+    DB_USERNAME=root             # <--- DEFAULT LARAGON
+    DB_PASSWORD=                  # <--- DEFAULT LARAGON (KOSONG/BLANK)
     ```
 
-4.  **Hasilkan Kunci Aplikasi (*Application Key*):** Kunci ini digunakan untuk keamanan (enkripsi).
+5.  **Hasilkan Kunci Aplikasi:**
 
     ```bash
     php artisan key:generate
     ```
 
-5.  **Jalankan Migrasi dan Seeder:** "Migrasi" membuat tabel yang diperlukan di basis data Anda. "Seeder" mengisinya dengan data awal (misalnya, pengguna admin).
+6.  **Jalankan Migrasi dan Seeder:** Ini akan membuat tabel dan mengisi data awal.
 
     ```bash
     php artisan migrate --seed
     ```
 
-### 2.2. Menjalankan Server Backend
+### 2.2. Menjalankan Server Backend (Metode Laragon)
 
-Mulai server lokal agar *frontend* Svelte Anda dapat berkomunikasi dengannya.
+Karena Anda menggunakan Laragon, kita akan memanfaatkan **Virtual Host** Laragon untuk menjalankan server, bukan perintah `php artisan serve`.
 
-```bash
-php artisan serve
-```
+1.  **Pindahkan Proyek:** Pastikan folder utama Anda (`project-pbp-uas`) berada di dalam direktori **`www`** Laragon (misalnya, `C:\laragon\www\project-pbp-uas`).
+2.  **Buat Virtual Host:** Di Laragon, klik **Menu \> Apache \> Virtual Hosts \> Enable**. Kemudian klik **Menu \> Apache \> Virtual Hosts \> Create**.
+      * Laragon akan mendeteksi `project-pbp-uas` dan Anda bisa membuat *virtual host* (misalnya: `project-pbp-uas.test`).
+3.  **Konfigurasi Domain Laravel:** Karena Laravel berada di subfolder, Anda mungkin perlu melakukan sedikit penyesuaian *Virtual Host* di Laragon agar mengarah ke **`project-pbp-uas/backend-API/public`**.
+4.  **Restart Laragon:** Klik **Stop** lalu **Start All** di Laragon.
 
-API sekarang berjalan dan siap menerima permintaan, biasanya di: **`http://127.0.0.1:8000`**.
+> **Akses API:** Sekarang, API Backend Anda dapat diakses melalui URL kustom Laragon, seperti **`http://project-pbp-uas.test/api/endpoint`**.
 
 -----
 
-## 🎨 3. Penyiapan Svelte (Frontend)
+## 🎨 3. Penyiapan Frontend (Svelte)
 
-Svelte adalah *framework* JavaScript yang digunakan untuk membangun antarmuka pengguna (UI) yang responsif dan berjalan di *browser* pengguna.
+Frontend berada di dalam folder **`frontend-user/`**. Ini menggunakan **Node.js** dan **npm**.
 
-### 3.1. Langkah-Langkah Instalasi Awal
+### 3.1. Instalasi
 
-1.  **Masuk ke Folder Frontend:** Kode Svelte Anda kemungkinan ada di dalam subfolder.
+1.  **Pindah ke folder Frontend:**
 
     ```bash
-    cd [path_to_svelte_project]
-    # Contoh: cd resources/js/
+    cd ../frontend-user/
     ```
 
-2.  **Instal Dependensi JavaScript:** Kita menggunakan **npm** (*Node Package Manager*) untuk mengunduh semua paket Svelte dan *styling* yang diperlukan.
+2.  **Instal Dependensi JavaScript (npm):**
 
     ```bash
     npm install
     ```
 
-    *Ini mengunduh semua paket yang tercantum dalam `package.json` dan `package-lock.json`.*
-
 ### 3.2. Menjalankan Server Frontend
 
-Mulai server pengembangan (*development server*). Ini mengawasi file Anda dan secara otomatis memuat ulang *browser* saat Anda menyimpan perubahan.
+Jalankan server pengembangan SvelteKit.
 
 ```bash
 npm run dev
 ```
 
-Aplikasi Svelte harus dapat dilihat di *browser* Anda, biasanya di: **`http://localhost:5173/`**.
+Aplikasi Svelte akan berjalan di: **`http://localhost:5173/`** (atau port yang tertera di Terminal).
 
 -----
 
-## ✅ Daftar Periksa Singkat untuk Mulai Bekerja
+## ✅ Daftar Periksa Akhir
 
-1.  ✅ **Periksa Backend:** Apakah server Laravel berjalan? (`php artisan serve`)
-2.  ✅ **Periksa Frontend:** Apakah server Svelte berjalan? (`npm run dev`)
-3.  ✅ **Periksa Git:** Apakah Anda berada di **cabang fitur baru**? (`git checkout -b feature/tugas`)
+1.  ✅ **Git:** Sudah berada di **cabang fitur baru**?
+2.  ✅ **Laragon:** Sudah **Start All**? *Virtual Host* sudah dibuat dan mengarah ke `backend-API/public/`?
+3.  ✅ **Frontend (UI):** Server Svelte berjalan? (`cd frontend-user/` lalu `npm run dev`)
+4.  ✅ **Komunikasi:** Pastikan kode Svelte Anda membuat permintaan ke URL *Virtual Host* Laragon yang benar (misalnya, **`http://project-pbp-uas.test`**), BUKAN ke `http://127.0.0.1:8000`.
