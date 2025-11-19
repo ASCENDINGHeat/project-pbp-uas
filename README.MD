@@ -1,5 +1,3 @@
-Tentu, ini adalah panduan yang diperbarui dan lebih terperinci, dengan instruksi khusus untuk pengguna **Laragon** sebagai lingkungan *local web server*.
-
 -----
 
 ## 🚀 Panduan Pemula: Pengembangan Kolaboratif (Laragon Edition)
