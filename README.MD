@@ -11,7 +11,7 @@ Referensi dokumentasi framework dan lain lain **(PENTING)**
 - [git](https://git-scm.com/docs)
 - [laravel](https://laravel.com/docs/12.x/installation)
 - [svelte](https://svelte.dev/docs/svelte/overview)
-- [tailwind](https://tailwindcss)
+- [tailwind](https://tailwindcss.com/docs/installation/using-vite)
 
 -----
 
