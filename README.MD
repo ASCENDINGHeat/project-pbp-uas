@@ -1,10 +1,17 @@
-Tentu, ini adalah panduan yang diperbarui dan lebih terperinci, dengan instruksi khusus untuk pengguna **Laragon** sebagai lingkungan *local web server*.
-
 -----
 
 ## 🚀 Panduan Pemula: Pengembangan Kolaboratif (Laragon Edition)
 
 Proyek ini menggunakan arsitektur *monorepo* sederhana, memisahkan kode **Backend (Laravel API)** dan **Frontend (Svelte)** ke dalam subfolder yang berbeda. Ikuti langkah-langkah di bawah ini untuk menyiapkan lingkungan kerja Anda.
+
+-----
+
+## Documentation Reference
+Referensi dokumentasi framework dan lain lain **(PENTING)**
+- [git](https://git-scm.com/docs)
+- [laravel](https://laravel.com/docs/12.x/installation)
+- [svelte](https://svelte.dev/docs/svelte/overview)
+- [tailwind](https://tailwindcss)
 
 -----
 
@@ -164,4 +171,4 @@ Aplikasi Svelte akan berjalan di: **`http://localhost:5173/`** (atau port yang t
 1.  ✅ **Git:** Sudah berada di **cabang fitur baru**?
 2.  ✅ **Laragon:** Sudah **Start All**? *Virtual Host* sudah dibuat dan mengarah ke `backend-API/public/`?
 3.  ✅ **Frontend (UI):** Server Svelte berjalan? (`cd frontend-user/` lalu `npm run dev`)
-4.  ✅ **Komunikasi:** Pastikan kode Svelte Anda membuat permintaan ke URL *Virtual Host* Laragon yang benar (misalnya, **`http://project-pbp-uas.test`**), BUKAN ke `http://127.0.0.1:8000`.
+4.  ✅ **Komunikasi:** Pastikan kode Svelte Anda membuat permintaan ke URL *Virtual Host* Laragon yang benar (misalnya, **`http://project-pbp-uas.test`**, BUKAN ke `http://127.0.0.1:8000`.)
