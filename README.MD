@@ -30,9 +30,9 @@ Git melacak perubahan kode, dan kita akan menggunakan alur kerja *branching* unt
     ```bash
     cd project-pbp-uas # Ganti sesuai nama folder proyek Anda
     ```
-4.  **Pastikan Anda berada di cabang `main`** (cabang utama yang stabil):
+4.  **Pastikan Anda berada di cabang `master`** (cabang utama yang stabil):
     ```bash
-    git checkout main
+    git checkout master
     ```
 
 ### 1.2. Alur Kerja Branching (Bekerja dengan Aman) 🌳
@@ -64,11 +64,11 @@ Setiap fitur atau perbaikan harus dikerjakan di cabang terpisah, bukan di `main`
 
 4.  **Pull Request (PR):** Setelah selesai, buka PR di *platform* repositori untuk ditinjau dan digabungkan ke `main`.
 
-5.  **Sinkronisasi `main`:** Selalu perbarui `main` Anda setelah ada penggabungan (*merge*).
+5.  **Sinkronisasi `master`:** Selalu perbarui `master` Anda setelah ada penggabungan (*merge*).
 
     ```bash
-    git checkout main
-    git pull origin main
+    git checkout master
+    git pull origin master
     ```
 
 -----
