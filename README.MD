@@ -214,4 +214,4 @@ Aplikasi Svelte akan berjalan di: **`http://localhost:5173/`** (atau port yang t
 1.  ✅ **Git:** Sudah berada di **cabang fitur baru**?
 2.  ✅ **Laragon:** Sudah **Start All**? *Virtual Host* sudah dibuat dan mengarah ke `backend-API/public/`?
 3.  ✅ **Frontend (UI):** Server Svelte berjalan? (`cd frontend-user/` lalu `npm run dev`)
-4.  ✅ **Komunikasi:** Pastikan kode Svelte Anda membuat permintaan ke URL *Virtual Host* Laragon yang benar (misalnya, **`http://project-pbp-uas.test`**), BUKAN ke `http://127.0.0.1:8000`.
+4.  ✅ **Komunikasi:** Pastikan kode Svelte Anda membuat permintaan ke URL *Api* Laragon yang benar (misalnya, **`http://localhost/backend-api/public/api/`**), BUKAN ke `http://127.0.0.1:8000`.
