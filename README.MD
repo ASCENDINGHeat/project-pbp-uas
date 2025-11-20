@@ -172,13 +172,10 @@ Backend berada di dalam folder **`backend-API/`**. Ini menggunakan **PHP** dan *
 
 Karena Anda menggunakan Laragon, kita akan memanfaatkan **Virtual Host** Laragon untuk menjalankan server, bukan perintah `php artisan serve`.
 
-1.  **Pindahkan Proyek:** Pastikan folder utama Anda (`project-pbp-uas`) berada di dalam direktori **`www`** Laragon (misalnya, `C:\laragon\www\project-pbp-uas`). Atau pindahkan document root pada laragon menjadi folder yang menyimpan folder project (misalnya, `D:\Project\laragondocs`).
-2.  **Buat Virtual Host:** Di Laragon, klik **Menu \> Apache \> Virtual Hosts \> Enable**. Kemudian klik **Menu \> Apache \> Virtual Hosts \> Create**.
-      * Laragon akan mendeteksi `project-pbp-uas` dan Anda bisa membuat *virtual host* (misalnya: `project-pbp-uas.test`).
-3.  **Konfigurasi Domain Laravel:** Karena Laravel berada di subfolder, Anda mungkin perlu melakukan sedikit penyesuaian *Virtual Host* di Laragon agar mengarah ke **`project-pbp-uas/backend-API/public`**.
+1.  **Pindahkan Proyek:** Pastikan folder utama Anda (`project-pbp-uas`) berada di dalam direktori **`www`** Laragon (misalnya, `C:\laragon\www\project-pbp-uas`). Atau pindahkan document root pada laragon menjadi folder yang menyimpan folder project (misalnya, `D:\Project\project-pbp-uas`).
 4.  **Restart Laragon:** Klik **Stop** lalu **Start All** di Laragon.
 
-> **Akses API:** Sekarang, API Backend Anda dapat diakses melalui URL kustom Laragon, seperti **`http://project-pbp-uas.test/api/endpoint`**.
+> **Akses API:** Sekarang, API Backend Anda dapat diakses melalui URL kustom Laragon, seperti **`http://localhost/backend-API/public/api/`**.
 
 -----
 
