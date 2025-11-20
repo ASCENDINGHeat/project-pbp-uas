@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facade\Auth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -14,10 +14,8 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if(Auth::attempt($request->only('eamil', 'password'))){
+        if(Auth::attempt($request->only('email', 'password'))){
             $user = Auth::user();
-
-            $user->tokens()->delete();
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
