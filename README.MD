@@ -11,7 +11,7 @@ Referensi dokumentasi framework dan lain lain **(PENTING)**
 - [git](https://git-scm.com/docs)
 - [laravel](https://laravel.com/docs/12.x/installation)
 - [svelte](https://svelte.dev/docs/svelte/overview)
-- [tailwind](https://tailwindcss.com/docs/installation/using-vite)
+- [tailwind](https://tailwindcss.com/docs/)
 
 -----
 
@@ -97,16 +97,64 @@ Backend berada di dalam folder **`backend-API/`**. Ini menggunakan **PHP** dan *
     cp .env.example .env
     ```
 
-4.  **Konfigurasi Basis Data (Laragon Default):** **Buka file `.env`** dan sesuaikan pengaturan basis data Anda. Jika Anda menggunakan pengaturan *default* Laragon, kredensialnya sangat sederhana.
+4.  **Konfigurasi Database (Laragon Default):** **Buka file `.env`** dan sesuaikan pengaturan basis data Anda. Jika Anda menggunakan pengaturan *default* Laragon, kredensialnya sangat sederhana.
 
-    ```
-    DB_CONNECTION=mysql
+    ```env
+    DB_CONNECTION=pgsql
     DB_HOST=127.0.0.1
-    DB_PORT=3306
-    DB_DATABASE=nama_db_proyek_anda # <--- PASTIKAN DB INI SUDAH DIBUAT DI PHPMYADMIN/HEIDI SQL
-    DB_USERNAME=root             # <--- DEFAULT LARAGON
-    DB_PASSWORD=                  # <--- DEFAULT LARAGON (KOSONG/BLANK)
+    DB_PORT=5432
+    DB_DATABASE=nama_db_proyek_anda   # <--- PASTIKAN DB INI SUDAH DIBUAT DI pgAdmin / psql
+    DB_USERNAME=postgres              # <--- GANTI sesuai user PostgreSQL Anda
+    DB_PASSWORD=your_password_here    # <--- GANTI sesuai password PostgreSQL Anda
     ```
+    <details>
+    <summary>meng-install postgresql ke laragon</summary>
+
+    1. Unduh dan pasang PostgreSQL (Windows)
+        - Buka https://www.postgresql.org/download/windows/ dan pilih installer (EnterpriseDB).
+        - Jalankan installer, tentukan:
+        - Password untuk user `postgres` (ingat/password ini untuk .env).
+        - Port (default 5432).
+        - Sertakan pgAdmin untuk manajemen GUI.
+
+    2. Verifikasi layanan berjalan
+        - Buka Services (services.msc) → cari "postgresql-x64-XX" → pastikan Status = Running.
+        - Atau buka pgAdmin dan hubungkan ke server lokal dengan user `postgres`.
+
+    3. Buat database proyek
+        - Dengan pgAdmin: klik kanan → Create → Database → isi nama (mis. nama_db_proyek_anda).
+        - Atau pakai psql di CMD:
+        ```bash
+        psql -U postgres
+        CREATE DATABASE nama_db_proyek_anda;
+        \q
+        ```
+
+    4. Konfigurasi di Laragon / proyek Laravel
+        - Jika Laragon dan PostgreSQL berjalan di mesin yang sama, gunakan konfigurasi .env seperti:
+        ```
+        DB_CONNECTION=pgsql
+        DB_HOST=127.0.0.1
+        DB_PORT=5432
+        DB_DATABASE=nama_db_proyek_anda
+        DB_USERNAME=postgres
+        DB_PASSWORD=your_password_here
+        ```
+        - Pastikan tidak ada konflik port. Jika Laragon menampilkan shortcut DB, Anda dapat mengakses pgAdmin atau psql secara terpisah.
+
+    5. (Opsional) Integrasi PostgreSQL ke Laragon menus
+        - Untuk pengelolaan lewat menu Laragon, Anda bisa menyalin folder instalasi PostgreSQL ke: C:\laragon\bin\postgresql\{versi}\ (tidak wajib; instalasi EnterpriseDB sudah cukup).
+        - Restart Laragon jika perlu.
+
+    6. Tes koneksi dari Laravel
+        - Jalankan migrasi untuk memastikan koneksi:
+        ```bash
+        php artisan migrate
+        ```
+        - Jika ada error, periksa kredensial .env, service PostgreSQL, dan log Laravel.
+
+    Catatan singkat: installer resmi (EnterpriseDB) + pgAdmin paling mudah untuk pemula.
+    </details>
 
 5.  **Hasilkan Kunci Aplikasi:**
 
@@ -124,7 +172,7 @@ Backend berada di dalam folder **`backend-API/`**. Ini menggunakan **PHP** dan *
 
 Karena Anda menggunakan Laragon, kita akan memanfaatkan **Virtual Host** Laragon untuk menjalankan server, bukan perintah `php artisan serve`.
 
-1.  **Pindahkan Proyek:** Pastikan folder utama Anda (`project-pbp-uas`) berada di dalam direktori **`www`** Laragon (misalnya, `C:\laragon\www\project-pbp-uas`).
+1.  **Pindahkan Proyek:** Pastikan folder utama Anda (`project-pbp-uas`) berada di dalam direktori **`www`** Laragon (misalnya, `C:\laragon\www\project-pbp-uas`). Atau pindahkan document root pada laragon menjadi folder yang menyimpan folder project (misalnya, `D:\Project\laragondocs`).
 2.  **Buat Virtual Host:** Di Laragon, klik **Menu \> Apache \> Virtual Hosts \> Enable**. Kemudian klik **Menu \> Apache \> Virtual Hosts \> Create**.
       * Laragon akan mendeteksi `project-pbp-uas` dan Anda bisa membuat *virtual host* (misalnya: `project-pbp-uas.test`).
 3.  **Konfigurasi Domain Laravel:** Karena Laravel berada di subfolder, Anda mungkin perlu melakukan sedikit penyesuaian *Virtual Host* di Laragon agar mengarah ke **`project-pbp-uas/backend-API/public`**.
