@@ -13,10 +13,42 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        // Fetch products with pagination (e.g., 10 per page)
-        // You can add filtering here later (e.g., where('stock_quantity', '>', 0))
-        $products = Product::select('product_id', 'title', 'price', 'stock_quantity', 'vendor_id')
-            ->paginate(10);
+        // 1. Start the query builder (don't get() or paginate() yet)
+        $query = Product::query();
+
+        // 2. Apply Filters based on Request Parameters
+
+        // A. Search by Title (Partial Match)
+        if ($request->has('search')) {
+            $searchTerm = $request->search;
+            $query->where('title', 'ILIKE', "%{$searchTerm}%"); // Use ILIKE for case-insensitive (PostgreSQL)
+        }
+
+        // B. Filter by Vendor
+        if ($request->has('vendor_id')) {
+            $query->where('vendor_id', $request->vendor_id);
+        }
+
+        // C. Filter by Price Range
+        if ($request->has('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+        if ($request->has('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        // D. Sort/Order (Optional)
+        $sortDirection = $request->input('sort', 'asc') === 'desc' ? 'desc' : 'asc';
+        $query->orderBy('price', $sortDirection);
+
+
+        // 3. Execute Pagination (Dynamic per_page)
+        $perPage = $request->query('per_page', 10);
+        $products = $query->paginate($perPage);
+
+        // 4. Append query parameters to pagination links
+        // This ensures next_page_url includes &search=... and &min_price=...
+        $products->appends($request->all());
 
         return response()->json($products, 200);
     }
