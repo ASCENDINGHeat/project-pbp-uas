@@ -3,6 +3,70 @@
 BEGIN;
 
 
+CREATE TABLE IF NOT EXISTS public.cache
+(
+    key character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    value text COLLATE pg_catalog."default" NOT NULL,
+    expiration integer NOT NULL,
+    CONSTRAINT cache_pkey PRIMARY KEY (key)
+);
+
+CREATE TABLE IF NOT EXISTS public.cache_locks
+(
+    key character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    owner character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    expiration integer NOT NULL,
+    CONSTRAINT cache_locks_pkey PRIMARY KEY (key)
+);
+
+CREATE TABLE IF NOT EXISTS public.failed_jobs
+(
+    id bigserial NOT NULL,
+    uuid character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    connection text COLLATE pg_catalog."default" NOT NULL,
+    queue text COLLATE pg_catalog."default" NOT NULL,
+    payload text COLLATE pg_catalog."default" NOT NULL,
+    exception text COLLATE pg_catalog."default" NOT NULL,
+    failed_at timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT failed_jobs_pkey PRIMARY KEY (id),
+    CONSTRAINT failed_jobs_uuid_unique UNIQUE (uuid)
+);
+
+CREATE TABLE IF NOT EXISTS public.job_batches
+(
+    id character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    name character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    total_jobs integer NOT NULL,
+    pending_jobs integer NOT NULL,
+    failed_jobs integer NOT NULL,
+    failed_job_ids text COLLATE pg_catalog."default" NOT NULL,
+    options text COLLATE pg_catalog."default",
+    cancelled_at integer,
+    created_at integer NOT NULL,
+    finished_at integer,
+    CONSTRAINT job_batches_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.jobs
+(
+    id bigserial NOT NULL,
+    queue character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    payload text COLLATE pg_catalog."default" NOT NULL,
+    attempts smallint NOT NULL,
+    reserved_at integer,
+    available_at integer NOT NULL,
+    created_at integer NOT NULL,
+    CONSTRAINT jobs_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.migrations
+(
+    id serial NOT NULL,
+    migration character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    batch integer NOT NULL,
+    CONSTRAINT migrations_pkey PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS public.order_items
 (
     item_id serial NOT NULL,
@@ -23,6 +87,14 @@ CREATE TABLE IF NOT EXISTS public.parent_orders
     CONSTRAINT parent_orders_pkey PRIMARY KEY (parent_order_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.password_reset_tokens
+(
+    email character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    token character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp(0) without time zone,
+    CONSTRAINT password_reset_tokens_pkey PRIMARY KEY (email)
+);
+
 CREATE TABLE IF NOT EXISTS public.payouts
 (
     payout_id serial NOT NULL,
@@ -31,6 +103,22 @@ CREATE TABLE IF NOT EXISTS public.payouts
     status character varying(50) COLLATE pg_catalog."default" DEFAULT 'requested'::character varying,
     processed_at timestamp with time zone,
     CONSTRAINT payouts_pkey PRIMARY KEY (payout_id)
+);
+
+CREATE TABLE IF NOT EXISTS public.personal_access_tokens
+(
+    id bigserial NOT NULL,
+    tokenable_type character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    tokenable_id bigint NOT NULL,
+    name text COLLATE pg_catalog."default" NOT NULL,
+    token character varying(64) COLLATE pg_catalog."default" NOT NULL,
+    abilities text COLLATE pg_catalog."default",
+    last_used_at timestamp(0) without time zone,
+    expires_at timestamp(0) without time zone,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT personal_access_tokens_pkey PRIMARY KEY (id),
+    CONSTRAINT personal_access_tokens_token_unique UNIQUE (token)
 );
 
 CREATE TABLE IF NOT EXISTS public.products
@@ -44,15 +132,29 @@ CREATE TABLE IF NOT EXISTS public.products
     CONSTRAINT products_pkey PRIMARY KEY (product_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.sessions
+(
+    id character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    user_id bigint,
+    ip_address character varying(45) COLLATE pg_catalog."default",
+    user_agent text COLLATE pg_catalog."default",
+    payload text COLLATE pg_catalog."default" NOT NULL,
+    last_activity integer NOT NULL,
+    CONSTRAINT sessions_pkey PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS public.users
 (
-    user_id serial NOT NULL,
+    id bigserial NOT NULL,
+    name character varying(255) COLLATE pg_catalog."default" NOT NULL,
     email character varying(255) COLLATE pg_catalog."default" NOT NULL,
-    password_hash character varying(255) COLLATE pg_catalog."default" NOT NULL,
-    full_name character varying(100) COLLATE pg_catalog."default",
-    created_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT users_pkey PRIMARY KEY (user_id),
-    CONSTRAINT users_email_key UNIQUE (email)
+    email_verified_at timestamp(0) without time zone,
+    password character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    remember_token character varying(100) COLLATE pg_catalog."default",
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    CONSTRAINT users_pkey1 PRIMARY KEY (id),
+    CONSTRAINT users_email_unique UNIQUE (email)
 );
 
 CREATE TABLE IF NOT EXISTS public.vendor_orders
@@ -95,7 +197,7 @@ ALTER TABLE IF EXISTS public.order_items
 
 ALTER TABLE IF EXISTS public.parent_orders
     ADD CONSTRAINT parent_orders_user_id_fkey FOREIGN KEY (user_id)
-    REFERENCES public.users (user_id) MATCH SIMPLE
+    REFERENCES public.users (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
 
@@ -130,7 +232,7 @@ ALTER TABLE IF EXISTS public.vendor_orders
 
 ALTER TABLE IF EXISTS public.vendors
     ADD CONSTRAINT vendors_user_id_fkey FOREIGN KEY (user_id)
-    REFERENCES public.users (user_id) MATCH SIMPLE
+    REFERENCES public.users (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
 CREATE INDEX IF NOT EXISTS vendors_user_id_key
