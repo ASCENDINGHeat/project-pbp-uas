@@ -21,7 +21,8 @@ class ProductController extends Controller
         // A. Search by Title (Partial Match)
         if ($request->has('search')) {
             $searchTerm = $request->search;
-            $query->where('title', 'ILIKE', "%{$searchTerm}%"); // Use ILIKE for case-insensitive (PostgreSQL)
+            // Use a portable case-insensitive search that works on MySQL and PostgreSQL
+            $query->whereRaw('LOWER(title) LIKE ?', [strtolower("%{$searchTerm}%")]);
         }
 
         // B. Filter by Vendor
@@ -37,9 +38,22 @@ class ProductController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
 
-        // D. Sort/Order (Optional)
+        // D. Sort/Order (Complex Logic)
+        $sortBy = $request->input('sort_by', 'price'); // price, title, created_at, stock_quantity
         $sortDirection = $request->input('sort', 'asc') === 'desc' ? 'desc' : 'asc';
-        $query->orderBy('price', $sortDirection);
+
+        // Validate sort_by to prevent SQL injection
+        $allowedSortFields = ['price', 'title', 'created_at', 'stock_quantity', 'vendor_id'];
+        if (!in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'price';
+        }
+
+        $query->orderBy($sortBy, $sortDirection);
+
+        // Secondary sort (if primary sort is not price, also sort by price)
+        if ($sortBy !== 'price') {
+            $query->orderBy('price', $sortDirection);
+        }
 
 
         // 3. Execute Pagination (Dynamic per_page)
@@ -47,28 +61,27 @@ class ProductController extends Controller
         $products = $query->paginate($perPage);
 
         // 4. Append query parameters to pagination links
-        // This ensures next_page_url includes &search=... and &min_price=...
         $products->appends($request->all());
 
         return response()->json($products, 200);
     }
 
-    /**
-     * Deliver Single Product Page
-     * GET /api/products/{id}
-     */
+        /**
+         * Deliver Single Product Page
+         * GET /api/products/{id}
+         */
     public function show($id)
     {
-        // Find product by product_id
-        $product = Product::find($id);
+    // Find product by product_id
+    $product = Product::find($id);
 
-        if (!$product) {
-            return response()->json([
-                'message' => 'Product not found'
-            ], 404);
-        }
+    if (!$product) {
+        return response()->json([
+            'message' => 'Product not found'
+        ], 404);
+    }
 
-        return response()->json($product, 200);
+    return response()->json($product, 200);
     }
 
     public function store(Request $request)

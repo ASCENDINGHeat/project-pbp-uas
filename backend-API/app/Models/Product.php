@@ -13,10 +13,10 @@ class Product extends Model
     protected $table = 'products';
 
     // Specify the primary key since it is 'product_id', not 'id'
-    protected $primaryKey = 'product_id';
+    protected $primaryKey = 'id';
 
     // Disable timestamps since the table definition in pbpsql.sql doesn't include them
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'vendor_id',
@@ -37,7 +37,7 @@ class Product extends Model
     public function getImageUrlAttribute()
     {
         // Check if 'details' has an 'image_path' key
-        if (isset($this->details['image_path'])) {
+        if (isset($this->details['images_path'])) {
             return asset('storage/' . $this->details['image_path']);
         }
         return null;
