@@ -66,8 +66,22 @@
 </div>
 
 <div class="container">
-	<ProductGrid products={featured} title="Produk Unggulan" columns={4} />
+
+    <ProductGrid 
+        products={featured} 
+        title="Produk Unggulan" 
+        columns={4} 
+    />
+
+    <!-- PAGINATION -->
+    <div class="pagination">
+        <button class="pg-btn">‹ Previous</button>
+        <span class="pg-number active">1</span>
+        <button class="pg-btn">Next ›</button>
+    </div>
+
 </div>
+
 
 <style>
 	/* gunakan variabel dari Header */
@@ -195,6 +209,34 @@
 		margin: 40px auto;
 		padding: 0 20px 70px 20px; /* Tambah 70px bottom padding untuk mobile nav */
 	}
+	.pagination {
+        margin-top: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+    }
+
+    .pg-btn {
+        background: #eee;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+    }
+
+    .pg-number {
+        padding: 8px 14px;
+        border-radius: 12px;
+        background: #eee;
+        cursor: pointer;
+    }
+
+    .pg-number.active {
+        background: #115EE6;
+        color: white;
+        font-weight: 600;
+    }
 
 	/* responsive */
 	@media (max-width: 1024px) {
