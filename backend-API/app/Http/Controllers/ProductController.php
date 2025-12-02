@@ -105,11 +105,6 @@ class ProductController extends Controller
                     $imagePaths[] = $file->store('products', 'public');
                 }
             }
-        } elseif ($request->hasFile('image')) {
-            $single = $request->file('image');
-            if ($single->isValid()) {
-                $imagePaths[] = $single->store('products', 'public');
-            }
         }
 
         // 3. Create the Product
@@ -120,8 +115,6 @@ class ProductController extends Controller
             'price' => $request->price,
             'stock_quantity' => $request->stock_quantity ?? 0,
             'details' => $request->details ?? [],
-            'image_path' => count($imagePaths) ? $imagePaths[0] : null,             // backward compatibility
-            'image_paths' => count($imagePaths) ? json_encode($imagePaths) : null, // store all paths as JSON
         ]);
 
         // 4. Build public URLs for response
@@ -132,8 +125,6 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Product created successfully',
             'data' => $product,
-            'image_paths' => $imagePaths,
-            'image_urls' => $imageUrls,
         ], 201);
     }
 }
