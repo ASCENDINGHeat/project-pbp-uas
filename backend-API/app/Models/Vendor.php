@@ -9,6 +9,8 @@ class Vendor extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'id';
+
     protected $fillable = [
         'user_id',
         'store_name',
@@ -17,7 +19,11 @@ class Vendor extends Model
         'balance'
     ];
 
+    public function products(){
+        return $this->hasMany(Product::class, 'vendors_id', 'id');
+    }
+
     public function user(){
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

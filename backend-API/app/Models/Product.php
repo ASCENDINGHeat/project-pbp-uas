@@ -34,12 +34,27 @@ class Product extends Model
         'stock_quantity' => 'integer',
     ];
 
+    protected $appends = ['image_url']; // Append these to the JSON output automatically
+
+    // Accessor for Main Image URL
     public function getImageUrlAttribute()
     {
-        // Check if 'details' has an 'image_path' key
-        if (isset($this->details['images_path'])) {
-            return asset('storage/' . $this->details['image_path']);
+        // Check if details is an array and has the key
+        if (is_array($this->details) && isset($this->details['images_path'])) {
+            return asset('storage/' . $this->details['images_path']);
         }
-        return null;
+        return null; // Return default placeholder URL here if needed
+    }
+
+    // Accessor for Gallery URLs
+    public function getGalleryUrlsAttribute()
+    {
+        $urls = [];
+        if (is_array($this->details) && isset($this->details['gallery_paths'])) {
+            foreach ($this->details['gallery_paths'] as $path) {
+                $urls[] = asset('storage/' . $path);
+            }
+        }
+        return $urls;
     }
 }
