@@ -14,12 +14,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/vendor/register', [VendorController::class, 'register']);
     Route::get('/vendor/profile', [VendorController::class, 'vendorProfile']);
-    Route::post('/product/create', [ProductController::class, 'store']);
+    Route::post('/product', [ProductController::class, 'store']);
     Route::match(['put', 'patch'], '/product/{id}', [ProductController::class, 'update']);
 });
 
 Route::get('/product', [ProductController::class, 'index']); // Product List
 Route::get('/product/{id}', [ProductController::class, 'show']); // Product Page
-Route::post('/product', [ProductController::class, 'store']); // Create Product
 
 Route::get('/vendor/{id}/products', [VendorController::class, 'vendorProductsView']); // Vendor's Products

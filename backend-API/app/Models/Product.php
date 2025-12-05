@@ -19,12 +19,11 @@ class Product extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'vendor_id',
+        'vendors_id',
         'title',
         'price',
         'stock_quantity',
         'details',
-        'gallery',
     ];
 
     // Cast JSONB column 'details' to array and price to decimal for API responses
@@ -39,9 +38,9 @@ class Product extends Model
     // Accessor for Main Image URL
     public function getImageUrlAttribute()
     {
-        // Check if details is an array and has the key
-        if (is_array($this->details) && isset($this->details['images_path'])) {
-            return asset('storage/' . $this->details['images_path']);
+        // Check if details is an array and has the key path under 'images.main'
+        if (is_array($this->details) && isset($this->details['images']['main']) && $this->details['images']['main']) {
+            return asset('storage/' . $this->details['images']['main']);
         }
         return null; // Return default placeholder URL here if needed
     }

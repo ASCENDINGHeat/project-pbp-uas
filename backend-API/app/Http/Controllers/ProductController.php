@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Vendor;
+use App\Models\User;
 
 class ProductController extends Controller
 {
@@ -88,7 +91,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         // 1. Get Authenticated User & Check Vendor Status
-        $user = auth()->user();
+        $user = Auth::user();
 
         // Load the vendor relationship if not already loaded
         if (!$user->vendor) {
@@ -108,7 +111,10 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'category' => 'nullable|string|max:100',
 
-            // Validate Images (Changed 'gallery' to 'images' to match your loop)
+            // Main image (optional)
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+
+            // Validate Gallery (store as details.images.gallery)
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
@@ -125,25 +131,31 @@ class ProductController extends Controller
             $details['category'] = $validated['category'];
         }
 
-        // Initialize the images array if it doesn't exist
-        if (!isset($details['images_paths'])) {
-            $details['images_paths'] = [];
+        // Initialize the images structure under details
+        if (!isset($details['images']) || !is_array($details['images'])) {
+            $details['images'] = ['main' => null, 'gallery' => []];
+        } else {
+            $details['images']['main'] = $details['images']['main'] ?? null;
+            $details['images']['gallery'] = $details['images']['gallery'] ?? [];
+        }
+
+        // Handle main image upload (optional)
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products/main', 'public');
+            $details['images']['main'] = $path;
         }
 
         // 5. Handle Gallery Uploads
-        // Fixed: Matching the validation key 'images'
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
-                // Fixed: specific path structure
-                $path = $file->store('products/images', 'public');
-                // Fixed: appending to the correct plural key 'images_paths'
-                $details['images_paths'][] = $path;
+                $path = $file->store('products/gallery', 'public');
+                $details['images']['gallery'][] = $path;
             }
         }
 
         // 6. Create Product
         $product = Product::create([
-            'vendor_id' => $user->vendor->id,
+            'vendors_id' => $user->vendor->id,
             'title' => $validated['title'],
             'price' => $validated['price'],
             'stock_quantity' => $validated['stock_quantity'] ?? 0,
@@ -191,11 +203,18 @@ class ProductController extends Controller
         // Start with existing details from DB
         $currentDetails = $product->details ?? [];
 
+        // Ensure images structure exists
+        $currentDetails['images'] = $currentDetails['images'] ?? ['main' => null, 'gallery' => []];
+
         // Get new flexible details from request
         $newDetails = $request->input('details', []);
 
         // Merge: New input overwrites old keys, but keeps keys not mentioned
         $updatedDetails = array_merge($currentDetails, $newDetails);
+
+        // Ensure nested images keys remain arrays/values
+        $updatedDetails['images'] = $updatedDetails['images'] ?? ['main' => null, 'gallery' => []];
+        $updatedDetails['images']['gallery'] = $updatedDetails['images']['gallery'] ?? [];
 
         // Handle specific explicit fields merging into details
         if ($request->has('description')) {
@@ -208,21 +227,21 @@ class ProductController extends Controller
         // 6. Handle Main Image Replacement
         if ($request->hasFile('image')) {
             // Optional: Delete old image to save space
-            if (!empty($currentDetails['images_path'])) {
-                Storage::disk('public')->delete($currentDetails['images_path']);
+            if (!empty($currentDetails['images']['main'])) {
+                Storage::disk('public')->delete($currentDetails['images']['main']);
             }
             // Store new image
-            $updatedDetails['images_path'] = $request->file('image')->store('products/main', 'public');
+            $updatedDetails['images']['main'] = $request->file('image')->store('products/main', 'public');
         }
 
         // 7. Handle Gallery Updates
         // A. Remove selected images
         if ($request->has('remove_gallery_images')) {
             $pathsToRemove = $request->input('remove_gallery_images');
-            $currentGallery = $updatedDetails['images_paths'] ?? [];
+            $currentGallery = $updatedDetails['images']['gallery'] ?? [];
 
             // Filter out the paths user wants to remove
-            $updatedDetails['images_paths'] = array_values(array_diff($currentGallery, $pathsToRemove));
+            $updatedDetails['images']['gallery'] = array_values(array_diff($currentGallery, $pathsToRemove));
 
             // Physically delete files
             Storage::disk('public')->delete($pathsToRemove);
@@ -231,7 +250,7 @@ class ProductController extends Controller
         // B. Append new images
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
-                $updatedDetails['images_paths'][] = $file->store('products/gallery', 'public');
+                $updatedDetails['images']['gallery'][] = $file->store('products/gallery', 'public');
             }
         }
 
