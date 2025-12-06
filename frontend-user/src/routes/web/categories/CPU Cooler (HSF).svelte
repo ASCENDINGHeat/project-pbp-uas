@@ -2,16 +2,16 @@
 	import ProductGrid from '$lib/components/ProductGrid.svelte';
 	import { getProductsByCategory } from '$lib/data/products';
 
-	const categoryProducts = getProductsByCategory('casing');
+	const categoryProducts = getProductsByCategory('storage');
 </script>
 
 <main class="container">
 	<div class="header-section">
-		<h1>Casing / Chassis</h1>
-		<p>Casing komputer dengan desain modern</p>
+		<h1>CPU Cooler (HSF)</h1>
+		<p>Pendingin Processor</p>
 	</div>
 
-	<ProductGrid products={categoryProducts} title="Casing Pilihan" />
+	<ProductGrid products={categoryProducts} title="Storage Pilihan" />
 </main>
 
 <style>
