@@ -189,6 +189,7 @@
             return;
         }
 
+        let savedNext: any[] = [];
         cart.update((current) => {
             const next = Array.isArray(current) ? [...current] : [];
 
@@ -211,8 +212,15 @@
                 }
             });
 
+            savedNext = next;
             return next;
         });
+
+        try {
+            localStorage.setItem('cart', JSON.stringify(savedNext));
+        } catch (e) {
+            // ignore storage errors
+        }
 
         alert(`${totalItems} komponen berhasil ditambahkan ke keranjang!`);
     }
@@ -222,6 +230,7 @@
             alert('Silakan pilih komponen terlebih dahulu.');
             return;
         }
+        // Tambah ke cart dan pastikan disimpan sebelum navigasi
         handleAddToCart();
         goto('/web/checkout');
     }
