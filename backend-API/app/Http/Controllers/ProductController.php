@@ -155,7 +155,7 @@ class ProductController extends Controller
 
         // 6. Create Product
         $product = Product::create([
-            'vendors_id' => $user->vendor->id,
+            'vendor_id' => $user->vendor->id,
             'title' => $validated['title'],
             'price' => $validated['price'],
             'stock_quantity' => $validated['stock_quantity'] ?? 0,
