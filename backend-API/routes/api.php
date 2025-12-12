@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\WishListController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -13,6 +14,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/cart/{id}', [CartController::class, 'addToCart']);
     Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/wishlist',[WishListController::class,'toggle']);
+    Route::get('/wishlist',[WishListController::class,'view']);
+
 });
 
 Route::get('/product', [ProductController::class, 'index']); // Product List
