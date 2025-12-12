@@ -138,10 +138,7 @@ class OrderController extends Controller
     {
         // Retrieve the authenticated user's parent orders, ordered by newest first.
         // Eager load vendorOrders for a complete overview.
-        $orders = $request->user()->parentOrders()
-            ->with('vendorOrders')
-            ->latest()
-            ->paginate(15);
+        $orders = $request->user()->parentOrders()->with('vendorOrders')->latest()->paginate(15);
 
         return response()->json($orders);
     }
