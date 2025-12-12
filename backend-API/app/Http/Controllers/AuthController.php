@@ -33,8 +33,30 @@ class AuthController extends Controller
         ], 401);
     }
 
-    public function logout(Request $request)
-    {
+    public function register(Request $request){
+        $valid = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = \App\Models\User::create([
+            'name' => $valid['name'],
+            'email' => $valid['email'],
+            'password' => bcrypt($valid['password']),
+        ]);
+
+        $token = $user-> createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'User registered',
+            'user' => $user,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ], 201);
+    }
+
+    public function logout(Request $request){
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'logged out']);

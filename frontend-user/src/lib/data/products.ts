@@ -7,6 +7,8 @@ export interface Product {
 	rating: number;
 	reviews: number;
 	inStock: boolean;
+	// NEW: optional description for detail modal
+	description?: string;
 }
 
 export const products: Product[] = [
@@ -18,7 +20,8 @@ export const products: Product[] = [
 		category: 'processor',
 		rating: 4.8,
 		reviews: 145,
-		inStock: true
+		inStock: true,
+		description: 'Intel Core i9 generasi terakhir, performa tinggi untuk gaming dan content creation.'
 	},
 	{
 		id: 'proc-2',
@@ -28,7 +31,8 @@ export const products: Product[] = [
 		category: 'processor',
 		rating: 4.9,
 		reviews: 198,
-		inStock: true
+		inStock: true,
+		description: 'Ryzen 9 dengan banyak core & thread, sangat cocok untuk multitasking berat.'
 	},
 	{
 		id: 'mb-1',
@@ -38,7 +42,8 @@ export const products: Product[] = [
 		category: 'motherboard',
 		rating: 4.7,
 		reviews: 92,
-		inStock: true
+		inStock: true,
+		description: 'Motherboard high-end untuk platform Intel dengan fitur overclock dan I/O lengkap.'
 	},
 	{
 		id: 'vga-1',
@@ -48,7 +53,8 @@ export const products: Product[] = [
 		category: 'vga',
 		rating: 4.9,
 		reviews: 234,
-		inStock: true
+		inStock: true,
+		description: 'GPU flagship untuk gaming 4K dan content creation intensif.'
 	},
 	{
 		id: 'vga-2',
@@ -58,7 +64,8 @@ export const products: Product[] = [
 		category: 'vga',
 		rating: 4.7,
 		reviews: 189,
-		inStock: true
+		inStock: true,
+		description: 'Pilihan high-end dengan nilai performa-per-harga solid.'
 	},
 	{
 		id: 'ram-1',
@@ -68,7 +75,8 @@ export const products: Product[] = [
 		category: 'ram',
 		rating: 4.8,
 		reviews: 178,
-		inStock: true
+		inStock: true,
+		description: 'RAM DDR5 kapasitas besar, cocok untuk aplikasi memory-intensive.'
 	},
 	{
 		id: 'stor-1',
@@ -78,7 +86,8 @@ export const products: Product[] = [
 		category: 'storage',
 		rating: 4.9,
 		reviews: 267,
-		inStock: true
+		inStock: true,
+		description: 'NVMe super cepat dengan kapasitas besar untuk storage utama.'
 	},
 	{
 		id: 'psu-1',
@@ -88,7 +97,8 @@ export const products: Product[] = [
 		category: 'psu',
 		rating: 4.8,
 		reviews: 134,
-		inStock: true
+		inStock: true,
+		description: 'PSU berkualitas tinggi dengan efisiensi dan kabel modular.'
 	}
 ];
 

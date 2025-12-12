@@ -1,5 +1,7 @@
+
 <script lang="ts">
 	import { cart } from '$lib/stores/cartStore';
+	import { browser } from '$app/environment';
 
 	export let id: string;
 	export let name: string;
@@ -19,11 +21,43 @@
 		});
 		alert(`${name} ditambahkan ke keranjang!`);
 	}
+
+	// WATCHLIST (fix SSR)
+	let watchlist = new Set<string>();
+
+	if (browser) {
+		watchlist = new Set<string>(
+			JSON.parse(localStorage.getItem("watchlist") || "[]")
+		);
+	}
+
+	// reactive
+	$: isWatchlisted = watchlist.has(id);
+
+	function toggleWatchlist() {
+		if (watchlist.has(id)) {
+			watchlist.delete(id);
+		} else {
+			watchlist.add(id);
+		}
+
+		if (browser) {
+			localStorage.setItem("watchlist", JSON.stringify([...watchlist]));
+		}
+	}
 </script>
+
 
 <div class="product-card">
 	<div class="product-image">
 		<img src={image} alt={name} />
+		<button class="watchlist-btn" on:click|stopPropagation={toggleWatchlist}>
+			{#if isWatchlisted}
+				❤️
+			{:else}
+				🤍
+			{/if}
+		</button>
 		{#if !inStock}
 			<div class="out-of-stock">Habis Stok</div>
 		{/if}
@@ -158,4 +192,23 @@
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
+
+	.watchlist-btn {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	background: rgba(255, 255, 255, 0.85);
+	border: none;
+	font-size: 1.4rem;
+	padding: 4px 6px;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: transform 0.2s ease, background 0.2s;
+}
+
+.watchlist-btn:hover {
+	transform: scale(1.15);
+	background: white;
+}
+
 </style>

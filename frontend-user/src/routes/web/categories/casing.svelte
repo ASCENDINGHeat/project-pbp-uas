@@ -1,33 +1,23 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
 	import ProductGrid from '$lib/components/ProductGrid.svelte';
 	import { getProductsByCategory } from '$lib/data/products';
 
-	$: category = $page.params.category;
-	$: categoryProducts = getProductsByCategory(category);
+	let categoryProducts: any[] = [];
 
-	const categoryNames: Record<string, string> = {
-		all: 'Semua Kategori',
-		processor: 'Processor',
-		motherboard: 'Motherboard',
-		vga: 'Kartu Grafis',
-		ram: 'RAM',
-		storage: 'Storage',
-		casing: 'Casing',
-		psu: 'Power Supply',
-		monitor: 'Monitor'
-	};
-
-	$: categoryName = categoryNames[category] || 'Kategori';
+	onMount(() => {
+		const prods = getProductsByCategory?.('casing');
+		categoryProducts = prods ?? [];
+	});
 </script>
 
 <main class="container">
 	<div class="header-section">
-		<h1>{categoryName}</h1>
-		<p>Produk berkualitas untuk kebutuhan Anda</p>
+		<h1>Casing / Chassis</h1>
+		<p>Casing komputer dengan desain modern</p>
 	</div>
 
-	<ProductGrid products={categoryProducts} title="{categoryName}" />
+	<ProductGrid products={categoryProducts} title="Casing Pilihan" />
 </main>
 
 <style>
