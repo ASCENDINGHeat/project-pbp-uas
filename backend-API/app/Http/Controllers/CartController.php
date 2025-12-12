@@ -13,6 +13,7 @@ class CartController extends Controller
     public function addToCart(Request $request, $productId)
     {
         $userId = Auth::id();
+        $quantity = $request->input('quantity', 1);
         $condition = [
             'product_id' => $productId,
             'user_id' => $userId,
@@ -22,6 +23,7 @@ class CartController extends Controller
         if ($cartItem) {
             $cartItem->increment('quantity', $request->quantity);
         } else {
+
             Cart::create(array_merge($condition, [
                 'quantity' => $request->quantity,
             ]));
