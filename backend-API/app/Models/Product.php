@@ -19,7 +19,7 @@ class Product extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'vendors_id',
+        'vendor_id',
         'title',
         'price',
         'stock_quantity',

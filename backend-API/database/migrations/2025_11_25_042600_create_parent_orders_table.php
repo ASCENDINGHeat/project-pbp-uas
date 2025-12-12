@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users');
             $table->decimal('total_amount', 12, 2);
-            $table->string('payment_status', 50)->default('pending');
+            $table->enum('payment_status', ['1', '2', '3', '4'])->default('1')->comment('1: Pending, 2: Completed, 3: Failed, 4: Refunded');
+            $table->string('snap_token')->nullable();
             $table->timestamps();
         });
     }

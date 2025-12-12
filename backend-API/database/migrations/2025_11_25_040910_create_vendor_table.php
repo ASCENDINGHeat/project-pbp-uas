@@ -16,9 +16,10 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('store_name', 100)->unique();
             $table->text('store_description')->nullable();
+            $table->string('store_logo')->nullable();
             $table->decimal('commission_rate', 5, 2)->default(5.00);
             $table->decimal('balance', 12, 2)->default(0.00);
-            $table->timestamps()->default(DB::raw('CURRENT_TIMESTAMP'));
+            $table->timestamps();
         });
     }
 

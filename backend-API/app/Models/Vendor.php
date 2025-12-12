@@ -15,12 +15,21 @@ class Vendor extends Model
         'user_id',
         'store_name',
         'store_description',
+        'store_logo',
         'commission_rate',
         'balance'
     ];
 
+    public function getStoreLogoUrlAttribute()
+    {
+        if ($this->store_logo) {
+            return asset('storage/' . $this->store_logo);
+        }
+        return null; // or return a default placeholder URL
+    }
+
     public function products(){
-        return $this->hasMany(Product::class, 'vendors_id', 'id');
+        return $this->hasMany(Product::class, 'vendor_id', 'id');
     }
 
     public function user(){
