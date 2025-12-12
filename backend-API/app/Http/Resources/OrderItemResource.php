@@ -20,7 +20,7 @@ class OrderItemResource extends JsonResource
             'item_id' => $this->id,
             'product_id' => $this->product_id,
             // Assuming you have a Product model and a ProductResource for deeper details
-            // 'product' => new ProductResource($this->whenLoaded('product')),
+            'product' => new ProductResource($this->whenLoaded('product')),
             'quantity' => $this->quantity,
             'unit_price' => number_format($this->unit_price, 2),
             'subtotal' => number_format($this->quantity * $this->unit_price, 2),

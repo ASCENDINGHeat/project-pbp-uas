@@ -21,7 +21,7 @@ class OrderItem extends Model
      */
     public function vendorOrder(): BelongsTo
     {
-        return $this->belongsTo(vendorOrder::class);
+        return $this->belongsTo(VendorOrder::class);
     }
 
     /**

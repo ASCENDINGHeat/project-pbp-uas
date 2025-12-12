@@ -51,7 +51,7 @@ class OrderController extends Controller
             $parentOrder = ParentOrder::create([
                 'user_id' => $user->id,
                 'total_amount' => 0, // Temporarily 0, will be updated after calculating vendor totals
-                'payment_status' => 'paid',
+                'payment_status' => '1',
             ]);
 
             $finalTotal = 0;
@@ -89,6 +89,7 @@ class OrderController extends Controller
                         'unit_price' => $item->product->price,
                     ]);
                     // ** (Inventory decrement should happen here) **
+                    $item->product->decrement('stock_quantity', $item->quantity);
                 }
             }
 

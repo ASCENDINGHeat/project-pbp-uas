@@ -62,4 +62,13 @@ class User extends Authenticatable
     public function vendor(){
         return $this->hasOne(Vendor::class);
     }
+
+    public function parentOrders(){
+        return $this->hasMany(ParentOrder::class, 'user_id', 'id');
+    }
+
+    public function cartItems(){
+        return $this->hasMany(CartItem::class, 'user_id', 'id');
+    }
+
 }
