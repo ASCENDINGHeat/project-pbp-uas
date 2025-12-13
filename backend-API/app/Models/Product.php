@@ -56,4 +56,7 @@ class Product extends Model
         }
         return $urls;
     }
+    public function Vendor(){
+        return $this->belongsTo(Vendor::class);
+    }
 }
