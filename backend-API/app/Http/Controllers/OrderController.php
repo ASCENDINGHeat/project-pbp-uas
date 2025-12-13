@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Midtrans\Snap;
+use Midtrans\Config;
 
 class OrderController extends Controller
 {
@@ -35,24 +37,20 @@ class OrderController extends Controller
             // ** (Inventory/Stock Check & Price Validation should occur here) **
             // Check if all products are in stock and if the current cart price matches the product's database price.
 
-            $totalAmount = 0;
+            $calculatedTotal = 0;
+            foreach ($cartItems as $item) {
+                $calculatedTotal += $item->quantity * $item->product->price;
+            }
             $vendorGroups = $cartItems->groupBy('product.vendor_id');
 
-            // 2. Process Payment (Simulated/Gateway Call)
-            // A real application would call a Stripe/PayPal/etc. gateway here.
-            // If payment fails, throw an exception and the transaction rolls back.
-            $paymentSuccess = true; // Assume success for this guide
-
-            if (!$paymentSuccess) {
-                throw new \Exception('Payment failed due to an external error.');
-            }
-
-            // 3. Create the Parent Order (User's overall order)
             $parentOrder = ParentOrder::create([
                 'user_id' => $user->id,
-                'total_amount' => 0, // Temporarily 0, will be updated after calculating vendor totals
-                'payment_status' => '1',
+                'total_amount' => $calculatedTotal,
+                'payment_status' => '1', // Atau '1' sesuai enum migration Anda
+                'snap_token' => null, // Nanti diupdate
             ]);
+
+
 
             $finalTotal = 0;
 
@@ -88,13 +86,27 @@ class OrderController extends Controller
                         'quantity' => $item->quantity,
                         'unit_price' => $item->product->price,
                     ]);
-                    // ** (Inventory decrement should happen here) **
                     $item->product->decrement('stock_quantity', $item->quantity);
                 }
             }
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $parentOrder->id, // Gunakan ID Parent Order
+                    'gross_amount' => (int) $calculatedTotal, // Pastikan Integer
+                ],
+                'customer_details' => [
+                    'first_name' => $user->name,
+                    'email' => $user->email,
+                    // 'phone' => $user->phone, // Tambahkan jika ada kolom phone
+                ],
+                // Opsional: Tambahkan item_details jika ingin rincian di email Midtrans
+            ];
+            $snapToken = Snap::getSnapToken($params);
 
+            // 5. Simpan Token ke Database
+            $parentOrder->update(['snap_token' => $snapToken]);
             // 5. Update Parent Order Total
-            $parentOrder->update(['total_amount' => $finalTotal]);
+            // $parentOrder->update(['total_amount' => $finalTotal]);
 
             // 6. Clear the Cart
             $user->cart()->delete();
@@ -104,15 +116,20 @@ class OrderController extends Controller
 
 
 
-            return response()->json($parentOrder->load('vendorOrders.orderItems'), 201);
-
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Order created, waiting for payment',
+                'snap_token' => $snapToken, // INI YANG PENTING
+                'order_id' => $parentOrder->id,
+                'redirect_url' => "https://app.sandbox.midtrans.com/snap/v2/vtweb/" . $snapToken
+            ], 201);
         } catch (ValidationException $e) {
             DB::rollBack();
             return response()->json(['message' => 'Checkout failed.', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             DB::rollBack();
             // Log the error message
-            return response()->json(['message' => 'An unexpected error occurred during checkout.'], 500);
+            return response()->json(['message' => 'An unexpected error occurred during checkout.', 'error' => $e->getMessage()], 500);
         }
     }
     // app/Http/Controllers/Api/OrderController.php
@@ -121,14 +138,11 @@ class OrderController extends Controller
     {
         // Retrieve the authenticated user's parent orders, ordered by newest first.
         // Eager load vendorOrders for a complete overview.
-        $orders = $request->user()->parentOrders()
-            ->with('vendorOrders')
-            ->latest()
-            ->paginate(15);
+        $orders = $request->user()->parentOrders()->with('vendorOrders')->latest()->paginate(15);
 
         return response()->json($orders);
     }
-// app/Http/Controllers/Api/OrderController.php
+    // app/Http/Controllers/Api/OrderController.php
 
     public function show(ParentOrder $parentOrder)
     {

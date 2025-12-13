@@ -6,6 +6,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\WishListController;
+use App\Http\Controllers\OrderController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -23,8 +25,10 @@ Route::middleware('auth:sanctum')->group(function () {
     //cart and order routes
     Route::post('/cart/{id}', [CartController::class, 'addToCart']);
     Route::get('/cart', [CartController::class, 'index']);
-    Route::post('/checkout', [OrderController::class, 'checkout']);
-    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/wishlist',[WishListController::class,'toggle']);
+    Route::get('/wishlist',[WishListController::class,'view']);
+    Route::post('/checkout',[OrderController::class,'checkout']);
+    Route::get('/orders',[OrderController::class,'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 });
 
