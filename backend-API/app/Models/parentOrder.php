@@ -14,6 +14,7 @@ class ParentOrder extends Model
         'user_id',
         'total_amount',
         'payment_status',
+        'snap_token',
     ];
 
     /**

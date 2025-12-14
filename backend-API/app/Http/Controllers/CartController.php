@@ -13,7 +13,19 @@ class CartController extends Controller
     public function addToCart(Request $request, $productId)
     {
         $userId = Auth::id();
-        $quantity = $request->input('quantity', 1);
+        $quantity = (int)$request->input('quantity', 1);
+        $product = Product::find($productId);
+
+        if (!$product) {
+            return response()->json(['message' => 'Produk tidak ditemukan'], 404);
+        }
+
+        // Validasi Stok Habis Total
+        if ($product->stock_quantity <= 0) {
+            return response()->json([
+                'message' => 'Maaf, stok barang ini sedang habis.'
+            ], 400); // 400 Bad Request
+        }
         $condition = [
             'product_id' => $productId,
             'user_id' => $userId,

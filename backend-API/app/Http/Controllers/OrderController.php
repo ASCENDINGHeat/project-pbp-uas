@@ -99,7 +99,7 @@ class OrderController extends Controller
             $params = [
                 'transaction_details' => [
                     'order_id' => $parentOrder->id, // Gunakan ID Parent Order
-                    'gross_amount' => (int) $calculatedTotal, // Pastikan Integer
+                    'gross_amount' => (int) $calculatedTotal + 4000, // Pastikan Integer
                 ],
                 'customer_details' => [
                     'first_name' => $user->name,
@@ -201,12 +201,12 @@ class OrderController extends Controller
         // Logika update status database
         if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
             // LUNAS
-            $order->update(['payment_status' => 'paid']); // Atau '2'
+            $order->update(['payment_status' => 2]); // Atau '2'
             // Kurangi stok disini jika belum dikurangi saat checkout
 
         } else if ($transactionStatus == 'expire' || $transactionStatus == 'cancel' || $transactionStatus == 'deny') {
             // GAGAL
-            $order->update(['payment_status' => 'failed']); // Atau '3'
+            $order->update(['payment_status' => 3]); // Atau '3'
             foreach ($order->vendorOrders as $vendorOrder) {
                 foreach ($vendorOrder->orderItems as $item) {
                     $item->product->increment('stock_quantity', $item->quantity);
@@ -214,7 +214,7 @@ class OrderController extends Controller
             }
         } else if ($transactionStatus == 'pending') {
             // MENUNGGU
-            $order->update(['payment_status' => 'pending']);
+            $order->update(['payment_status' => 1]);
         }
 
         return response()->json(['message' => 'Callback received successfully']);
