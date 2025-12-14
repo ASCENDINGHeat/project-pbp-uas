@@ -84,7 +84,7 @@ class ProductController extends Controller
     public function show($id)
     {
     // Find product by product_id
-    $product = Product::find($id);
+    $product = Product::with('vendor')->find($id);
 
     if (!$product) {
         return response()->json([

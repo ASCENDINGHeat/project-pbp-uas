@@ -137,7 +137,7 @@
         }
         
         event.preventDefault();
-        const href = `/web/product-pcready/${id}`;
+        const href = `/web/product/${id}`;
         try {
             const p = goto(href);
             if (p && typeof (p as Promise<any>).catch === 'function') {
@@ -226,7 +226,7 @@
     <div class="product-grid-custom" style={`display:grid; gap:20px; grid-template-columns: repeat(${responsiveColumns}, 1fr);`}>
         {#each featured as product (product.id)}
             <a
-                href="/web/pc-ready"
+                href="/web/product/{product.id}"
                 class="prod-card"
                 data-sveltekit-preload-data="hover"
                 aria-label={"Lihat PC Ready"}

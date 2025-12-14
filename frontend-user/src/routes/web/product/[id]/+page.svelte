@@ -2,13 +2,15 @@
     import type { PageData } from './$types';
     import { goto } from '$app/navigation';
     import { addToCart } from '$lib/stores/cart';
-    import { PUBLIC_API_URL } from '$env/static/public';
     
     export let data: PageData;
+    
+    // [FIX] Reactive statement to extract product from data
+    $: ({ product } = data);
 
-    // --- State & Logic ---
     let quantity = 1;
 
+    // [FIX] Updated Interface to match mapped data in +page.ts
     interface FrontendProduct {
         id: string;
         name: string;
@@ -19,11 +21,14 @@
         reviews: number;
         inStock: boolean;
         description: string;
-        stock: number; // Added because your +page.svelte logic uses 'product.stock'
+        stock: number;
         shop_name: string;
+        status: string; // Added
+        sold: number;   // Added
     }
 
-    const categorySlug = product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+    // [FIX] Make categorySlug reactive because 'product' changes on navigation
+    $: categorySlug = product ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '') : '';
 
     function goToCategory() {
         goto(`/web/categories/${categorySlug}`);
@@ -35,6 +40,7 @@
     function decreaseQty() { if (quantity > 1) quantity--; }
 
     function goBack() {
+        // ... (Keep existing goBack logic) ...
         const currentPath = location.pathname + location.search;
         let refPath: string | null = null;
         if (document.referrer) {
@@ -78,9 +84,9 @@
 </script>
 
 <svelte:head>
-    <title>{product.name} | Store</title>
+    <title>{product?.name || 'Loading...'} | Store</title>
 </svelte:head>
-
+{#if product}
 <div class="page-content">
     
     <div class="nav-container">
@@ -172,6 +178,9 @@
 
     </main>
 </div>
+{:else}
+    <div class="loading">Loading Product...</div>
+{/if}
 
 <style>
     /* --- Layout Dasar --- */

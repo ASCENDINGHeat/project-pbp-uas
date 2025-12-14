@@ -23,7 +23,7 @@
     // 4. STATUS LOGIN OTOMATIS
     // Seluruh status login sekarang memantau 'currentUser'
     $: isLoggedIn = !!currentUser;
-    $: isVendor = currentUser?.is_vendor === 'true';
+    $: isVendor = !!currentUser?.is_vendor;
 
     // --- ON MOUNT ---
     onMount(async () => {
@@ -135,7 +135,7 @@
         <div class="separator"></div>
 
         {#if isVendor}
-            <a href="/web/vendor/dashboard" class="menu-item highlight" on:click|preventDefault={() => handleMenuItemClick('/web/vendor/dashboard')}>
+            <a href="/web/dashboard" class="menu-item highlight" on:click|preventDefault={() => handleMenuItemClick('/web/dashboard')}>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
                     <rect x="3" y="3" width="7" height="7"></rect>
                     <rect x="14" y="3" width="7" height="7"></rect>
