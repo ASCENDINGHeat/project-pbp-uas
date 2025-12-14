@@ -50,7 +50,7 @@
     </div>
 
     {#if !isLoggedIn}
-        <a href="/web/login" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/web/login')}>
+        <a href="/login" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/login')}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
                 <path d="M10 17l5-5-5-5"></path>
@@ -60,7 +60,7 @@
 
         <div class="separator"></div>
 
-        <a href="/web/register" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/web/register')}>
+        <a href="/register" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/register')}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                 <circle cx="8.5" cy="7" r="4"></circle>

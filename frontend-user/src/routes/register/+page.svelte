@@ -1,28 +1,70 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { onMount, onDestroy } from 'svelte';
-
+    import { PUBLIC_API_URL } from '$env/static/public';
     // Variabel input
     let name = "";
     let email = "";
     let password = "";
     let confirmPassword = "";
-
+    let isLoading = false;
+    const API_URL = `${PUBLIC_API_URL}/register`;
     // Fungsi Register Sederhana
-    function handleRegister() {
+    async function handleRegister() {
         if (!name || !email || !password || !confirmPassword) {
             alert("Harap isi semua kolom!");
             return;
         }
+        
 
         if (password !== confirmPassword) {
             alert("Password dan Konfirmasi Password tidak cocok!");
             return;
         }
+        isLoading = true;
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    password: password,
+                    password_confirmation: confirmPassword // Wajib dikirim untuk validasi 'confirmed' Laravel
+                })
+            });
 
-        // Simulasi sukses daftar
-        alert("Pendaftaran Berhasil! Silakan Login.");
-        goto('/login'); // Arahkan ke halaman login
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Handle Error Validasi dari Laravel
+                if (data.errors) {
+                    // Gabungkan semua pesan error jadi satu string
+                    const errorMessages = Object.values(data.errors).flat().join('\n');
+                    throw new Error(errorMessages);
+                }
+                throw new Error(data.message || 'Gagal mendaftar');
+            }
+
+            // Sukses
+            alert('Registrasi Berhasil! Silakan Login.');
+            
+            // Redirect ke halaman Login (sesuaikan path login Anda, sepertinya ada di /web/login)
+            goto('/login');
+
+        } catch (error) {
+            if (error instanceof Error) {
+                alert(error.message);
+            } else {
+                // Jika error bukan object Error (misal string atau object lain)
+                alert('Terjadi kesalahan yang tidak diketahui.');
+            }        
+        } finally {
+            isLoading = false;
+        }
     }
 
     // --- Prevent background scroll while modal is open ---

@@ -81,7 +81,7 @@
                 </div>
 
                 <div class="vendor-link" in:fly={{ y: 30, duration: 800, delay: 500 }}>
-                    Ingin berjualan? <a href="/vendor/register">Daftar sebagai Vendor</a>
+                    Ingin berjualan? <a href="/registervendor">Daftar sebagai Vendor</a>
                 </div>
             {/if}
         </div>
