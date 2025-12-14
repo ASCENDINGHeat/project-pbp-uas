@@ -17,14 +17,14 @@ class AuthController extends Controller
 
         if (Auth::attempt($request->only('email', 'password'))) {
             $user = Auth::user();
-            
+
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
                 'message' => 'Login succesful',
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'user' => $user
+                'user' => $user,
             ], 200);
         }
 
@@ -33,11 +33,13 @@ class AuthController extends Controller
         ], 401);
     }
 
-    public function register(Request $request){
+    public function register(Request $request)
+    {
         $valid = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'phone_number' => 'string|max:20|unique',
         ]);
 
         $user = \App\Models\User::create([
@@ -56,7 +58,8 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function logout(Request $request){
+    public function logout(Request $request)
+    {
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'logged out']);

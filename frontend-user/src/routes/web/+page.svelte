@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { getPcReadyProducts } from '$lib/data/pc-ready-products';
     import { onMount } from 'svelte';
+    import { PUBLIC_API_URL } from '$env/static/public';
 
     // 1. Types
     interface Slide {
@@ -58,18 +58,51 @@
     }
     function stopPromoAuto() { if (promoTimer) clearInterval(promoTimer); }
 
-    onMount(() => {
+    let featured: any[] = [];
+    let isLoading = true;
+
+    onMount(async () => {
         startAuto();
         startPromoAuto();
 
-        // restore scroll position if available
         const y = sessionStorage.getItem('pc-list-scroll');
         if (y) {
-            // small timeout to allow DOM layout
-            requestAnimationFrame(() => {
+            requestAnimationFrame(()=>{
                 window.scrollTo(0, Number(y));
                 sessionStorage.removeItem('pc-list-scroll');
             });
+        }
+
+        try {
+            const endpoint = PUBLIC_API_URL ? `${PUBLIC_API_URL}/product` : 'http://127.0.0.1:8000/api/product';
+
+            const res = await fetch(endpoint);
+            if (res.ok) {
+                const data = await res.json();
+                
+                // Backend return: { current_page: ..., data: [ ...products... ], ... }
+                // Kita ambil array 'data' dari paginator
+                const productsFromApi = data.data || [];
+
+                // Mapping format Backend (Laravel) -> Frontend (Svelte)
+                featured = productsFromApi.map((item: any) => {
+                    return {
+                        id: String(item.id),
+                        name: item.title, // 'title' di DB -> 'name' di Frontend
+                        // Gunakan accessor image_url dari Product Model atau placeholder
+                        image: item.image_url || item.imagePlaceholder || '/images/placeholder.png',
+                        price: Number(item.price),
+                        rating: 5.0, // Default rating (karena belum ada di DB)
+                        reviews: 0
+                    };
+                }).slice(0, 8); // Ambil 8 item saja untuk featured
+            } else {
+                console.error("Gagal mengambil data produk");
+            }
+        } catch (err) {
+            console.error("Error fetching API:", err);
+        } finally {
+            isLoading = false;
         }
 
         return () => {
@@ -77,8 +110,6 @@
             stopPromoAuto();
         };
     });
-
-    const featured = getPcReadyProducts(8);
 
     function handleImgError(e: Event) {
         const img = e.target as HTMLImageElement;

@@ -2,25 +2,26 @@
     import type { PageData } from './$types';
     import { goto } from '$app/navigation';
     import { addToCart } from '$lib/stores/cart';
+    import { PUBLIC_API_URL } from '$env/static/public';
     
     export let data: PageData;
 
     // --- State & Logic ---
     let quantity = 1;
 
-    const product = {
-        id: data.product.id ?? '',
-        name: data.product.name ?? 'Unnamed Product',
-        price: Number(data.product.price ?? 0),
-        shop_name: data.product.shop_name ?? 'Official Store',
-        image: data.product.image ?? data.product.imagePlaceholder ?? 'https://via.placeholder.com/800x800?text=No+Image',
-        description: data.product.description ?? 'Tidak ada deskripsi.',
-        rating: Number(data.product.rating ?? 0),
-        sold: Number(data.product.sold ?? 0),
-        stock: Number(data.product.stock ?? 50), 
-        category: (data.product.category ?? 'Intel Core i9').toString(),
-        get status() { return this.stock > 0 ? 'Tersedia' : 'Habis'; }
-    };
+    interface FrontendProduct {
+        id: string;
+        name: string;
+        price: number;
+        image: string;
+        category: string;
+        rating: number;
+        reviews: number;
+        inStock: boolean;
+        description: string;
+        stock: number; // Added because your +page.svelte logic uses 'product.stock'
+        shop_name: string;
+    }
 
     const categorySlug = product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
 
