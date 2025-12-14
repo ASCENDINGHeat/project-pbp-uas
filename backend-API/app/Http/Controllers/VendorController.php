@@ -12,6 +12,11 @@ class VendorController extends Controller
     public function register(Request $request)
     {
         $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         if ($user->vendor)
         {
             return response()->json([
@@ -20,11 +25,23 @@ class VendorController extends Controller
             ], 400);
         }
 
+        // Validate Store Data AND User Data (Phone/Address)
         $validate = $request->validate([
-            'store_name' => 'required|string|max:255',
-            'store_description' => 'nullable|string'
+            'store_name' => 'required|string|max:255|unique:vendors',
+            'store_description' => 'nullable|string',
+            'phone_number' => 'required|string|max:20',
+            'address' => 'required|string',
+            'owner_name' => 'nullable|string|max:255' // To update user name if needed
         ]);
 
+        // 1. Update User Profile with Contact Info
+        $user->update([
+            'phone_number' => $validate['phone_number'],
+            'address' => $validate['address'],
+            'name' => $validate['owner_name'] ?? $user->name,
+        ]);
+
+        // 2. Create Vendor Profile
         $vendor = $user->vendor()->create([
             'store_name' => $validate['store_name'],
             'store_description' => $validate['store_description'] ?? '',
@@ -34,13 +51,13 @@ class VendorController extends Controller
 
         return response()->json([
             'message' => 'Vendor registration successful.',
-            'vendor' => $vendor
+            'vendor' => $vendor,
+            'user' => $user
         ], 201);
     }
 
     public function vendorProductsView($id)
     {
-        // Logic: Find vendor by ID and load their products simultaneously
         $vendor = Vendor::with('products')->find($id);
 
         if (!$vendor)
@@ -50,10 +67,9 @@ class VendorController extends Controller
             ], 404);
         }
 
-        // Return the combined data
         return response()->json([
             'message' => 'Vendor retrieved successfully',
-            'data' => $vendor // 'products' will be nested inside this object
+            'data' => $vendor
         ], 200);
     }
 

@@ -40,6 +40,15 @@ class User extends Authenticatable
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'is_vendor', // <--- ADD THIS
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -59,6 +68,17 @@ class User extends Authenticatable
             return asset('storage/' . $this->profile_picture);
         }
         return null; // or return a default placeholder URL
+    }
+
+    /**
+     * Determine if the user is a vendor.
+     *
+     * @return bool
+     */
+    public function getIsVendorAttribute() // <--- ADD THIS FUNCTION
+    {
+        // Checks if the vendor relationship returns a model or null
+        return $this->vendor !== null;
     }
 
     public function vendor()

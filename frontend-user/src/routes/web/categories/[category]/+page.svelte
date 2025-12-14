@@ -1,11 +1,54 @@
 <script lang="ts">
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
-    import { getProductsByCategory } from '$lib/data/products';
+    // Remove static data import
+    // import { getProductsByCategory } from '$lib/data/products';
+    import { PUBLIC_API_URL } from '$env/static/public';
 
-    // --- LOGIC BAWAAN ANDA (TIDAK BERUBAH) ---
+    // --- LOGIC BARU: Mengambil Data dari API ---
+    let categoryProducts: any[] = [];
+    let loading = true;
+
     $: category = $page.params.category;
-    $: categoryProducts = getProductsByCategory(category);
+    // Get search term from URL query parameter
+    $: search = $page.url.searchParams.get('search') || '';
+
+    // Trigger fetch whenever category or search changes
+    $: fetchProducts(category, search);
+
+    async function fetchProducts(cat: string, searchTerm: string) {
+        loading = true;
+        try {
+            // Build Query URL
+            let url = `${PUBLIC_API_URL}/product?per_page=20`;
+            
+            // Filter by Category
+            if (cat && cat !== 'all') {
+                url += `&category=${cat}`;
+            }
+
+            // Filter by Search
+            if (searchTerm) {
+                url += `&search=${encodeURIComponent(searchTerm)}`;
+            }
+
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                // API pagination returns data in `data.data` or just `data` if not paginated. 
+                // Based on Controller: return response()->json($products, 200); where $products is paginated.
+                categoryProducts = data.data || [];
+            } else {
+                console.error('Failed to fetch products');
+                categoryProducts = [];
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            categoryProducts = [];
+        } finally {
+            loading = false;
+        }
+    }
 
     // Category names mapping
     const categoryNames: Record<string, string> = {
@@ -20,8 +63,10 @@
         monitor: 'Monitor',
         cooler: 'CPU Cooler (HSF)'
     };
-
     $: categoryName = categoryNames[category] || 'Kategori';
+
+    // Update title dynamic if searching
+    $: displayTitle = search ? `Hasil Pencarian: "${search}"` : categoryName;
 
     function labelize(seg: string) {
         return decodeURIComponent(seg).replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -47,7 +92,7 @@
     let breadcrumbs: { label: string; path: string }[] = [];
     $: breadcrumbs = buildBreadcrumbs($page.url.pathname);
 
-    // --- DATA KATEGORI ---
+    // --- DATA KATEGORI (Static Menu Icons) ---
     const categoriesList = [
         { name: 'Processor', slug: 'processor', icon: '/images/icons/cpu.png' },
         { name: 'Motherboard', slug: 'motherboard', icon: '/images/icons/mobo.png' },
@@ -62,7 +107,7 @@
 
     function handleIconError(e: Event) {
         const target = e.target as HTMLImageElement;
-        target.style.display = 'none'; 
+        target.style.display = 'none';
     }
 
     function openProduct(id: string) {
@@ -88,9 +133,11 @@
 <main class="category-page">
     <div class="container">
         <header class="header-section">
-            <h1>{categoryName}</h1>
+            <h1>{displayTitle}</h1>
             <p class="subtitle">
-                {#if category === 'all'}
+                {#if search}
+                    Menampilkan hasil pencarian untuk "{search}"
+                {:else if category === 'all'}
                     Jelajahi berbagai kategori produk terbaik kami
                 {:else}
                     Produk berkualitas untuk kebutuhan Anda
@@ -98,8 +145,7 @@
             </p>
         </header>
 
-        {#if category === 'all'}
-            
+        {#if category === 'all' && !search}
             <div class="cat-grid-container">
                 {#each categoriesList as cat}
                     <a href="/web/categories/{cat.slug}" class="cat-card">
@@ -110,13 +156,18 @@
                     </a>
                 {/each}
             </div>
+        {/if}
 
-        {:else}
-            <div class="product-grid">
+        <div class="product-grid" style="margin-top: 40px;">
+            {#if loading}
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+                    Memuat produk...
+                </div>
+            {:else if categoryProducts.length > 0}
                 {#each categoryProducts as product}
                     <div class="prod-card" role="button" tabindex="0" on:click={() => openProduct(product.id)}>
                         <div class="prod-thumb">
-                            <img src={product.image ?? product.imagePlaceholder} alt={product.name} on:error={handleIconError} />
+                            <img src={product.image_url || product.image || '/images/placeholder.png'} alt={product.title} on:error={handleIconError} />
                             <button class="wishlist-btn" on:click|stopPropagation={() => console.log('Wishlist clicked')}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                     <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"/>
@@ -125,13 +176,11 @@
                         </div>
 
                         <div class="prod-body">
-                            <div class="prod-title">{product.name}</div>
-                            
+                            <div class="prod-title">{product.title}</div>
                             <div class="prod-rating">
                                 <span class="star">★</span> 
-                                <span class="score">{product.rating || '4.8'}</span>
+                                <span class="score">4.8</span>
                             </div>
-
                             <div class="price">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(product.price)}</div>
                         </div>
 
@@ -142,15 +191,17 @@
                         </div>
                     </div>
                 {/each}
-                {#if categoryProducts.length === 0}
-                    <div class="empty-state">Tidak ada produk di kategori ini.</div>
-                {/if}
-            </div>
-        {/if}
+            {:else}
+                <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #888;">
+                    Tidak ada produk ditemukan.
+                </div>
+            {/if}
+        </div>
     </div>
 </main>
 
 <style>
+/* ... Styles preserved from original file ... */
     /* --- Layout & Breadcrumb Styles --- */
     .breadcrumb-wrapper {
         width: 100%;
@@ -192,7 +243,7 @@
 
     /* --- Page Content Styles --- */
     .category-page { 
-        background: #f7f7f7; 
+        background: #f7f7f7;
         min-height: 100vh;
         font-family: 'Inter', sans-serif;
     }
@@ -278,15 +329,14 @@
 
     /* --- PRODUCT GRID (UKURAN SEDANG / 6 KOLOM) --- */
     .product-grid { 
-        display: grid; 
-        /* [UPDATE] Menggunakan 6 kolom fix agar ukuran "sedang" sesuai permintaan sebelumnya */
-        grid-template-columns: repeat(6, 1fr); 
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
         gap: 20px; 
         margin-top: 20px; 
     }
 
     .prod-card { 
-        display: flex; 
+        display: flex;
         flex-direction: column;
         background: #fff; 
         border-radius: 12px; 
@@ -298,7 +348,7 @@
     }
 
     .prod-card:hover { 
-        transform: translateY(-5px); 
+        transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.08); 
     }
 
@@ -317,7 +367,7 @@
 
     .prod-thumb img { 
         max-width: 100%; 
-        max-height: 100%; 
+        max-height: 100%;
         object-fit: contain; 
         mix-blend-mode: multiply;
     }
@@ -353,7 +403,7 @@
     }
 
     .prod-title { 
-        font-weight: 500; 
+        font-weight: 500;
         color: #334155; 
         font-size: 0.95rem; 
         line-height: 1.4;
@@ -361,7 +411,7 @@
         -webkit-line-clamp: 2; 
         -webkit-box-orient: vertical;
         overflow: hidden;
-        height: 42px; 
+        height: 42px;
     }
 
     .prod-rating {
@@ -378,7 +428,7 @@
     .price { 
         font-weight: 800; 
         font-size: 1.1rem;
-        color: #9333ea; 
+        color: #9333ea;
         margin-top: auto; 
     }
 
@@ -401,7 +451,6 @@
     .btn-add-cart:hover { background-color: #2563eb; }
 
     /* --- Responsive --- */
-    /* Breakpoint agar 6 kolom tidak hancur di layar kecil */
     @media (max-width: 1400px) {
         .product-grid { grid-template-columns: repeat(5, 1fr); }
     }
@@ -418,15 +467,8 @@
     @media (max-width: 768px) {
         .container, .breadcrumb-container { padding: 0 16px; }
         .header-section h1 { font-size: 2rem; }
-        
         .cat-grid-container { grid-template-columns: repeat(2, 1fr); }
-
-        /* Mobile grid: 2 kolom */
-        .product-grid { 
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 10px;
-        }
-        
+        .product-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .prod-body { padding: 12px; }
         .prod-title { font-size: 0.85rem; height: auto; -webkit-line-clamp: 2; }
         .price { font-size: 1rem; }

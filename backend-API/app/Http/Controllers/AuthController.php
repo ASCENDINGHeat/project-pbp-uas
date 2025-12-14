@@ -39,13 +39,16 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'phone_number' => 'string|max:20|unique',
+            'phone_number' => 'nullable|string|max:20',
+            'address' => 'nullable|string'
         ]);
 
         $user = \App\Models\User::create([
             'name' => $valid['name'],
             'email' => $valid['email'],
             'password' => bcrypt($valid['password']),
+            'phone_number' => $valid['phone_number'] ?? null,
+            'address' => $valid['address'] ?? null,
         ]);
 
         $token = $user-> createToken('auth_token')->plainTextToken;

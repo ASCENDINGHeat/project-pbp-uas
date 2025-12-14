@@ -7,7 +7,7 @@
 
     // 1. DATA DARI PARENT (Server Side)
     // Jangan diubah/di-assign secara manual di dalam file ini!
-    export let userData: { name: string; email: string; role?: string } | null = null;
+    export let userData: { name: string; email: string; is_vendor?: boolean } | null = null;
 
     // 2. DATA DARI API (Client Side - Fetch sendiri)
     // Kita simpan hasil fetch di sini, bukan menimpa 'userData'
@@ -23,7 +23,7 @@
     // 4. STATUS LOGIN OTOMATIS
     // Seluruh status login sekarang memantau 'currentUser'
     $: isLoggedIn = !!currentUser;
-    $: isVendor = currentUser?.role === 'vendor';
+    $: isVendor = currentUser?.is_vendor === 'true';
 
     // --- ON MOUNT ---
     onMount(async () => {

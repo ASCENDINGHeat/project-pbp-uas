@@ -8,6 +8,25 @@
 
 	const dispatch = createEventDispatcher();
 
+	// --- NEW: Search State ---
+	let searchTerm = '';
+
+	function handleSearch() {
+		if (searchTerm.trim()) {
+			// Redirect to "All Categories" with the search query
+			goto(`/web/categories/all?search=${encodeURIComponent(searchTerm)}`);
+			// Optional: Clear search term after navigation or keep it
+			// searchTerm = ''; 
+		}
+	}
+
+	function handleSearchKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			handleSearch();
+		}
+	}
+	// --- END NEW ---
+
 	// cart menu
 	let cartOpen: boolean = false;
 	let cartEl: HTMLElement | null = null;
@@ -17,66 +36,43 @@
 	let wishlistEl: HTMLElement | null = null;
 	let wishlistBtnEl: HTMLElement | null = null;
 
-	// --- NEW: User Menu State ---
+	// User Menu State
 	let showUserDropdown: boolean = false;
-	// --- END NEW ---
 
 	function toggleCart(): void {
 		cartOpen = !cartOpen;
 		if (cartOpen) { wishlistOpen = false; showUserDropdown = false; }
-		// kirim event agar layout/global dapat membuka CartDrawer juga
 		dispatch('cartClick');
 	}
 
 	function closeCart(): void { cartOpen = false; }
 	
-	// --- FIX: Add missing toggleWishlist function ---
 	function toggleWishlist(): void {
 		wishlistOpen = !wishlistOpen;
 		if (wishlistOpen) { cartOpen = false; showUserDropdown = false; }
 	}
-	// --- END FIX ---
 	
 	function closeWishlist(): void { wishlistOpen = false; }
 
-	// --- NEW: Toggle user dropdown ---
 	function toggleUserMenu(): void {
 		showUserDropdown = !showUserDropdown;
 		if (showUserDropdown) { cartOpen = false; wishlistOpen = false; }
 	}
-	// --- END NEW ---
 
 	function onWindowClick(e: Event): void {
 		const target = (e as MouseEvent).target as Node | null;
-		if (
-			cartOpen &&
-			target &&
-			cartEl &&
-			cartBtnEl &&
-			!cartEl.contains(target) &&
-			!cartBtnEl.contains(target)
-		) {
+		if (cartOpen && target && cartEl && cartBtnEl && !cartEl.contains(target) && !cartBtnEl.contains(target)) {
 			cartOpen = false;
 		}
-		// handle wishlist outside click
-		if (
-			wishlistOpen &&
-			target &&
-			wishlistEl &&
-			wishlistBtnEl &&
-			!wishlistEl.contains(target) &&
-			!wishlistBtnEl.contains(target)
-		) {
+		if (wishlistOpen && target && wishlistEl && wishlistBtnEl && !wishlistEl.contains(target) && !wishlistBtnEl.contains(target)) {
 			wishlistOpen = false;
 		}
-		// Cari elemen parent untuk user menu dan tutup jika klik di luar
 		const userMenuArea = document.querySelector('.user-menu-area');
 		if (showUserDropdown && target && userMenuArea && !userMenuArea.contains(target)) {
 			showUserDropdown = false;
 		}
 	}
 
-	// focus programmatically when opened (include wishlist)
 	$: if (cartOpen) setTimeout(() => cartEl?.focus(), 0);
 	$: if (wishlistOpen) setTimeout(() => wishlistEl?.focus(), 0);
 
@@ -94,31 +90,26 @@
 		goto(path.startsWith('/web') ? path : `/web${path}`);
 	}
 
-	// ADDED: handler untuk settings navigation dengan login check
 	function handleSettingsClick() {
 		closeMenu();
 		const isLoggedIn = localStorage.getItem("userLoggedIn");
 		if (isLoggedIn) {
 			goto('/web/pengaturan');
 		} else {
-			// arahkan ke login (di sana ada tautan register)
 			goto('/web/login');
 		}
 	}
 
-	// ADDED: closeMenu() yang sebelumnya dipanggil tapi tidak didefinisikan
 	function closeMenu(): void {
 		showUserDropdown = false;
 	}
 
-	// ADDED: onKeyDown handler untuk menangani Escape dengan event yang benar
 	function onKeyDown(e: KeyboardEvent): void {
 		if (e.key === 'Escape') {
 			showUserDropdown = false;
 		}
 	}
 
-	// subtotal reaktif dan helper format
 	$: subtotal = $cart.reduce((sum, it) => sum + (Number(it.price ?? 0) * (it.quantity ?? 1)), 0);
 	const formatCurrency = (val: number) =>
 		new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
@@ -135,7 +126,6 @@
 	<div class="site-top">
 		<div class="brand">
 			<div class="brand-top-row">
-				<!-- CHANGED: make logo clickable anchor to /web home -->
 				<a href="/web" class="logo" aria-label="Beranda - PC Store">PC Store</a>
 				
 				<div class="brand-action-row">
@@ -147,16 +137,21 @@
 
 		<div class="top-right desktop-only">
 			<div class="search-wrap" role="search">
-				<input class="search-input" type="search" placeholder="Cari produk ..." aria-label="Cari produk" />
-				<button class="search-btn" aria-hidden="true" title="Cari">
+				<input 
+					class="search-input" 
+					type="search" 
+					placeholder="Cari produk ..." 
+					aria-label="Cari produk"
+					bind:value={searchTerm}
+					on:keydown={handleSearchKeydown}
+				/>
+				<button class="search-btn" aria-hidden="true" title="Cari" on:click={handleSearch}>
 					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2" aria-hidden="true">
 						<circle cx="11" cy="11" r="6"></circle>
 						<path d="M21 21l-4.35-4.35"></path>
 					</svg>
 				</button>
 			</div>
-
-			<!-- cart button -->
 			<div class="cart-wrapper">
 				<button
 					class="cart-btn"
@@ -232,7 +227,6 @@
 				{/if}
 			</div>
 
-			<!-- wishlist button -->
 			<div class="wishlist-wrapper">
 				<button
 					class="wishlist-btn"
@@ -259,7 +253,6 @@
 				{/if}
 			</div>
 
-			<!-- --- NEW: User Menu Icon --- -->
 			<div class="user-menu-area">
 				<button
 					class="btn-icon-user"
@@ -280,7 +273,6 @@
 					</div>
 				{/if}
 			</div>
-			<!-- --- END NEW --- -->
 		</div>
 
 		<button class="mobile-menu-btn" aria-label="Menu" on:click={() => goto('/web/sidebar-mobile')}>
@@ -293,7 +285,6 @@
 	</div>
 </header>
 
-<!-- KATEGORI: kategori bar dengan prefix /web -->
 <nav class="brand-category-bar bottom desktop-only" aria-label="Kategori - full width">
 	<div class="categories" role="navigation" aria-label="Kategori produk">
 		<a class="cat-pill large" href="/web/categories/all" on:click|preventDefault={() => handleCategoryClick('/web/categories/all')}>ALL CATEGORIES</a>
@@ -311,27 +302,24 @@
 <svelte:window on:click={onWindowClick} on:keydown={onKeyDown} />
 
 <style>
+/* ... all existing styles ... */
 	:root {
-		/* tinggi acuan untuk bar kategori dan elemen header */
 		--category-bar-height: 56px;
 	}
 
-	/* pastikan category bar menggunakan tinggi acuan */
 	.brand-category-bar {
 		min-height: var(--category-bar-height);
-		padding: 0 16px; /* horizontal spacing tetap */
+		padding: 0 16px;
 		display: flex;
 		align-items: center;
 		box-sizing: border-box;
 	}
 
-	/* header top (kotak yang berisi logo, tombol, search, icon) samakan tinggi */
 	.site-top {
 		min-height: var(--category-bar-height);
 		align-items: center;
 	}
 
-	/* buat elemen internal mengisi tinggi header dan ter-center vertikal */
 	.brand,
 	.brand-top-row,
 	.brand-action-row,
@@ -342,18 +330,15 @@
 		align-items: center;
 	}
 
-	/* logo agar vertikal terpusat tanpa mengubah ukuran font yang sudah ada */
 	.logo {
-		/* biarkan ukuran font ada, cukup pastikan center secara vertikal */
 		display: inline-flex;
 		align-items: center;
 		height: 100%;
 	}
 
-	/* tombol PC Ready / Jual PC mengikuti tinggi header */
 	.brand-action-row :global(button),
 	.brand-action-row .brand-action {
-		height: calc(var(--category-bar-height) - 14px); /* beri sedikit padding vertikal */
+		height: calc(var(--category-bar-height) - 14px);
 		padding: 0 18px;
 		border-radius: 10px;
 		display: inline-flex;
@@ -361,7 +346,6 @@
 		justify-content: center;
 	}
 
-	/* search pill mengikuti tinggi yang sama */
 	.search-wrap {
 		height: calc(var(--category-bar-height) - 14px);
 		padding: 0 12px;
@@ -374,7 +358,6 @@
 		padding: 0 8px;
 	}
 
-	/* cart / profile tombol ukuran sama dengan category bar (sedikit dikurangi agar tidak melebihi) */
 	.cart-btn,
 	.profile-btn,
 	.icon-btn {
@@ -388,13 +371,11 @@
 		border-radius: 999px;
 	}
 
-	/* sesuaikan badge posisi bila diperlukan */
 	.cart-count {
 		top: -6px;
 		right: -6px;
 	}
 
-	/* Responsive: tetap jaga proporsi di layar kecil */
 	@media (max-width: 900px) {
 		:root { --category-bar-height: 48px; }
 		.search-input { width: 140px; }
@@ -445,7 +426,6 @@
 		font-size: 3.2rem;
 		color: #fff;
 		line-height: 1;
-		/* ADDED: make it look clickable */
 		text-decoration: none;
 		cursor: pointer;
 		transition: opacity 0.2s;
@@ -508,7 +488,7 @@
 	.brand-category-bar {
 		display: flex;
 		align-items: center;
-		overflow: hidden; /* perbaikan: 'center' tidak valid, gunakan 'hidden' atau hapus */
+		overflow: hidden;
 		background: linear-gradient(90deg,#d33ad3,#6b3bff);
 		padding: 11px 10px;
 		width: 95%;
@@ -565,15 +545,14 @@
 	.menu-item:hover { background: rgba(255,255,255,0.03); }
 	.menu-item.muted { opacity: 0.8; font-size: 0.95rem; }
 
-	.search-btn { background: transparent; border: none; padding: 6px; display: inline-flex; align-items: center; justify-content: center, cursor: pointer; }
+	.search-btn { background: transparent; border: none; padding: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 	.mobile-menu-btn { display: none; background: transparent; border: none; color: white; cursor: pointer; padding: 8px; }
-
 
 	@media (max-width: 768px) {
 		.site-header { padding: 12px 16px; }
 		.site-top { flex-direction: column; gap: 12px; align-items: flex-start; }
 		.brand { min-width: 100%; width: 100%; }
-		.brand-top-row { width: 100%; flex-direction: column, gap: 12px; align-items: flex-start; }
+		.brand-top-row { width: 100%; flex-direction: column; gap: 12px; align-items: flex-start; }
 		.logo { font-size: 1.8rem; letter-spacing: 0.05em; }
 		.brand-action-row { width: 100%; gap: 10px; flex-wrap: wrap; margin-left: 0; }
 		.desktop-only { display: none !important; }
@@ -583,7 +562,7 @@
 
 	@media (max-width: 640px) {
 		.site-header { padding: 10px 12px; position: relative; }
-		.site-top { flex-direction: column, gap: 8px; align-items: flex-start; }
+		.site-top { flex-direction: column; gap: 8px; align-items: flex-start; }
 		.brand { width: 100%; min-width: 100%; }
 		.brand-top-row { width: 100%; flex-direction: column; gap: 10px; }
 		.logo { font-size: 1.6rem; margin-bottom: 4px; }
@@ -597,7 +576,7 @@
 		.brand-top-row { gap: 8px; }
 		.brand-action-row { gap: 6px; }
 		.nav-item span { font-size: 0.65rem; }
-		.nav-item svg { width: 22px, height: 22px; }
+		.nav-item svg { width: 22px; height: 22px; }
 	}
 
 	.cart-items {
@@ -636,7 +615,6 @@
 		font-weight: 600;
 	}
 
-	/* ensure search icon sits inside input and input has room */
 	.search-wrap { position: relative; }
 	.search-input { padding: 8px 44px 8px 12px; }
 
@@ -658,7 +636,6 @@
 		padding: 0;
 	}
 
-	/* wishlist styles - SESUAIKAN UKURAN SAMA DENGAN CART */
 	.wishlist-wrapper { position: relative; margin: 0 8px; display: inline-flex; align-items: center; }
 	.wishlist-btn {
 		width: 64px;
@@ -698,7 +675,6 @@
 		z-index: 30;
 	}
 
-	/* --- NEW: User Menu Styles --- */
 	.user-menu-area {
 		position: relative;
 		display: inline-flex;
@@ -734,5 +710,4 @@
 		margin-top: 8px;
 		z-index: 9999;
 	}
-	/* --- END NEW --- */
 </style>
