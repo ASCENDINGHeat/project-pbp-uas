@@ -47,14 +47,12 @@
                     throw new Error(errorMessages);
                 }
                 throw new Error(data.message || 'Gagal mendaftar');
+            }else{
+                localStorage.setItem('auth_token', data.access_token);
+				localStorage.setItem('user_data', JSON.stringify(data.user));
+                goto('/web');
+
             }
-
-            // Sukses
-            alert('Registrasi Berhasil! Silakan Login.');
-            
-            // Redirect ke halaman Login (sesuaikan path login Anda, sepertinya ada di /web/login)
-            goto('/login');
-
         } catch (error) {
             if (error instanceof Error) {
                 alert(error.message);

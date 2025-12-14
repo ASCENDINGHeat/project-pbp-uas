@@ -1,42 +1,112 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { createEventDispatcher, onMount } from 'svelte';
+    import { PUBLIC_API_URL } from '$env/static/public';
 
     const dispatch = createEventDispatcher();
 
-    // --- STATE VARIABLES ---
-    let isLoggedIn = false;
-    let isVendor = false;
+    // 1. DATA DARI PARENT (Server Side)
+    // Jangan diubah/di-assign secara manual di dalam file ini!
+    export let userData: { name: string; email: string; role?: string } | null = null;
 
-    // --- ON MOUNT (Cek Status Login) ---
-    onMount(() => {
-        // Cek localStorage saat komponen dimuat di browser
-        const userStatus = localStorage.getItem("userLoggedIn");
-        const vendorStatus = localStorage.getItem("isVendor");
+    // 2. DATA DARI API (Client Side - Fetch sendiri)
+    // Kita simpan hasil fetch di sini, bukan menimpa 'userData'
+    let apiUser: { name: string; email: string; role?: string } | null = null;
 
-        if (userStatus === "true") isLoggedIn = true;
-        if (vendorStatus === "true") isVendor = true;
+    let isOpen = false;
+
+    // 3. LOGIKA PENGGABUNGAN ($:)
+    // "Gunakan data API jika ada. Jika tidak, gunakan data dari Parent."
+    // Dengan cara ini, meskipun Parent mengirim null, apiUser tetap menjaga status login.
+    $: currentUser = apiUser || userData;
+
+    // 4. STATUS LOGIN OTOMATIS
+    // Seluruh status login sekarang memantau 'currentUser'
+    $: isLoggedIn = !!currentUser;
+    $: isVendor = currentUser?.role === 'vendor';
+
+    // --- ON MOUNT ---
+    onMount(async () => {
+        const token = localStorage.getItem('auth_token');
+        
+        // Jika Parent sudah memberi data, kita aman.
+        if (userData) return;
+
+        // Jika tidak ada token, stop.
+        if (!token) return;
+
+        try {
+            // console.log("UserMenu: Mengambil data user...");
+            const res = await fetch(`${PUBLIC_API_URL}/user`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.email) {
+                    // [PENTING] Simpan ke 'apiUser', JANGAN timpa 'userData'
+                    apiUser = data; 
+                    console.log("UserMenu: Login via Token sukses!");
+                }
+            } else {
+                // Hanya logout jika token benar-benar ditolak (401/403)
+                if (res.status === 401 || res.status === 403) {
+                    handleLogoutLocal();
+                }
+            }
+        } catch (err) {
+            console.error("UserMenu: Network Error (Abaikan jika offline sebentar)", err);
+        }
     });
 
     // --- HANDLERS ---
+    
     function handleMenuItemClick(path: string) {
         goto(path);
         dispatch('close');
+        isOpen = false;
     }
 
-    function handleLogout() {
-        if (confirm("Apakah Anda yakin ingin keluar?")) {
-            localStorage.removeItem("userLoggedIn");
-            localStorage.removeItem("isVendor");
-            
-            // Reset state
-            isLoggedIn = false;
-            isVendor = false;
-            
-            dispatch('close');
-            goto('/web/login');
-            // Opsional: Reload halaman untuk memastikan semua komponen ter-reset
-            window.location.reload();
+    // Bersihkan semua data lokal
+    function handleLogoutLocal() {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data'); 
+        
+        // Reset variabel lokal
+        apiUser = null; 
+        // Kita tidak bisa mereset 'userData' karena itu milik Parent, 
+        // tapi 'currentUser' akan otomatis null karena apiUser sudah null.
+        
+        isOpen = false;
+    }
+
+    async function handleLogout() {
+        const token = localStorage.getItem('auth_token');
+        try {
+            if (token) {
+                await fetch(`${PUBLIC_API_URL}/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Gagal logout server:", error);
+        } finally {
+            handleLogoutLocal();
+            // Paksa reload halaman agar Parent Component juga refresh statusnya
+            window.location.href = '/login'; 
+        }
+    }
+
+    function handleClickOutside(event: MouseEvent) {
+        if (isOpen && !(event.target as Element).closest('.user-menu-wrapper')) {
+            isOpen = false;
         }
     }
 </script>
@@ -44,34 +114,16 @@
 <div class="user-menu-dropdown" role="menu" aria-label="User menu">
     
     <div class="menu-header">
-        <span class="status-badge {isLoggedIn ? 'logged-in' : 'logged-out'}">
-            {isLoggedIn ? (isVendor ? '✓ Vendor' : '✓ Member') : '○ Belum Login'}
+        <span class="status-badge {!isLoggedIn ? 'logged-out' : 'logged-in'}">
+            {#if isLoggedIn}
+                {isVendor ? '✓ Vendor' : '✓ Member'}
+            {:else}
+                ○ Belum Login
+            {/if}
         </span>
     </div>
 
-    {#if !isLoggedIn}
-        <a href="/login" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/login')}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                <path d="M10 17l5-5-5-5"></path>
-            </svg>
-            <span>Login</span>
-        </a>
-
-        <div class="separator"></div>
-
-        <a href="/register" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/register')}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="8.5" cy="7" r="4"></circle>
-                <line x1="20" y1="8" x2="20" y2="14"></line>
-                <line x1="23" y1="11" x2="17" y2="11"></line>
-            </svg>
-            <span>Register</span>
-        </a>
-
-    {:else}
-        
+    {#if isLoggedIn}
         <a href="/web/profile" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/web/profile')}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -93,7 +145,7 @@
                 <span>Dashboard Toko</span>
             </a>
         {:else}
-            <a href="/web/vendor/register" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/web/vendor/register')}>
+            <a href="/registervendor" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/registervendor')}>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M3 3h18v18H3zM12 8v8M8 12h8"/>
                 </svg>
@@ -112,6 +164,26 @@
             <span>Log Out</span>
         </button>
 
+    {:else}
+        <a href="/login" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/login')}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <path d="M10 17l5-5-5-5"></path>
+            </svg>
+            <span>Login</span>
+        </a>
+
+        <div class="separator"></div>
+
+        <a href="/register" class="menu-item" on:click|preventDefault={() => handleMenuItemClick('/register')}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+            <span>Register</span>
+        </a>
     {/if}
 
     <div class="separator"></div>
@@ -127,10 +199,10 @@
 
 <style>
     .user-menu-dropdown {
-        background: #0f0d28; /* Warna background asli Anda */
+        background: #0f0d28;
         border-radius: 10px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-        padding: 8px 0; /* Padding vertikal disesuaikan */
+        padding: 8px 0;
         min-width: 220px;
         overflow: hidden;
         border: 1px solid rgba(255,255,255,0.08);
@@ -153,7 +225,7 @@
 
     .status-badge.logged-in {
         background: rgba(34, 197, 94, 0.2);
-        color: #86efac;
+        color: #86efac; 
         border: 1px solid rgba(34, 197, 94, 0.3);
     }
 
@@ -191,7 +263,7 @@
 
     /* Style khusus untuk dashboard vendor */
     .menu-item.highlight {
-        color: #d1b2ff; 
+        color: #d1b2ff;
     }
     
     .menu-item.highlight svg {

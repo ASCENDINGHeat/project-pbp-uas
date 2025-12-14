@@ -29,7 +29,6 @@
 			if (response.ok) {
 				localStorage.setItem('auth_token', data.access_token);
 				localStorage.setItem('user_data', JSON.stringify(data.user));
-
 				goto('/web');
 			} else {
 				errorMessage = data.message || 'Login gagal. Periksa kembali identitas anda';
