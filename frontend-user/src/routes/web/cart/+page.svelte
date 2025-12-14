@@ -28,7 +28,7 @@
             alert('Keranjang belanja kosong!');
             return;
         }
-        goto('/web/checkout');
+        goto('/web/co');
     }
 </script>
 
