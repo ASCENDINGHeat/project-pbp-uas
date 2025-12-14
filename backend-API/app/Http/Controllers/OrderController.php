@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use App\Models\VendorOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Models\Cart;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Midtrans\Snap;
@@ -22,13 +23,19 @@ class OrderController extends Controller
     {
         // Ensure the user is authenticated and has payment info/address handled by a Request object.
         $user = $request->user();
-
+        $request->validate([
+            'selected_cart_ids' => 'required|array|min:1', // Harus array dan minimal 1
+            'selected_cart_ids.*' => 'integer|exists:cart,id', // Pastikan ID valid
+        ]);
         // Start a transaction to prevent partial order creation if an error occurs.
         DB::beginTransaction();
 
         try {
             // 1. Fetch Cart and Pre-Checks
-            $cartItems = $user->cart()->with('product.vendor')->get();
+            $cartItems = Cart::with('product.vendor')
+                ->whereIn('id', $request->selected_cart_ids) // Filter ID yang dicentang
+                ->where('user_id', $user->id) // Security: Pastikan punya user sendiri
+                ->get();
 
             if ($cartItems->isEmpty()) {
                 throw new ValidationException(['cart' => 'Your cart is empty.']);
@@ -92,7 +99,7 @@ class OrderController extends Controller
             $params = [
                 'transaction_details' => [
                     'order_id' => $parentOrder->id, // Gunakan ID Parent Order
-                    'gross_amount' => (int) $calculatedTotal, // Pastikan Integer
+                    'gross_amount' => (int) $calculatedTotal + 4000, // Pastikan Integer
                 ],
                 'customer_details' => [
                     'first_name' => $user->name,
@@ -109,7 +116,9 @@ class OrderController extends Controller
             // $parentOrder->update(['total_amount' => $finalTotal]);
 
             // 6. Clear the Cart
-            $user->cart()->delete();
+            Cart::whereIn('id', $request->selected_cart_ids)
+                ->where('user_id', $user->id)
+                ->delete();
 
             // Commit all changes to the database
             DB::commit();
@@ -155,5 +164,59 @@ class OrderController extends Controller
         $parentOrder->load('vendorOrders.orderItems.product');
 
         return response()->json($parentOrder);
+    }
+    public function receive(Request $request)
+    {
+        // 1. Ambil Server Key dari Config
+        $serverKey = config('midtrans.server_key');
+
+        // 2. Buat String Gabungan (Concatenate)
+        // Hati-hati dengan gross_amount! Midtrans sering mengirim dengan desimal .00
+        // Contoh: "101" + "200" + "50000.00" + "SB-Mid-server-xxxx"
+        $hashedString = $request->order_id . $request->status_code . $request->gross_amount . $serverKey;
+
+        // 3. Lakukan Hashing SHA-512
+        $mySignature = hash('sha512', $hashedString);
+
+        // 4. Ambil Signature yang dikirim Midtrans
+        $incomingSignature = $request->signature_key;
+
+        // 5. BANDINGKAN (Verifikasi)
+        if ($mySignature !== $incomingSignature) {
+            // JIKA TIDAK SAMA: Berarti ada yang memanipulasi data / Hacker
+            return response()->json(['message' => 'Invalid Signature'], 403);
+        }
+
+        // --- MULAI DARI SINI DATA DIJAMIN AMAN ---
+
+        // 6. Cek Status Transaksi
+        $transactionStatus = $request->transaction_status;
+        $orderId = $request->order_id;
+
+        $order = ParentOrder::find($orderId);
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        // Logika update status database
+        if ($transactionStatus == 'capture' || $transactionStatus == 'settlement') {
+            // LUNAS
+            $order->update(['payment_status' => 2]); // Atau '2'
+            // Kurangi stok disini jika belum dikurangi saat checkout
+
+        } else if ($transactionStatus == 'expire' || $transactionStatus == 'cancel' || $transactionStatus == 'deny') {
+            // GAGAL
+            $order->update(['payment_status' => 3]); // Atau '3'
+            foreach ($order->vendorOrders as $vendorOrder) {
+                foreach ($vendorOrder->orderItems as $item) {
+                    $item->product->increment('stock_quantity', $item->quantity);
+                }
+            }
+        } else if ($transactionStatus == 'pending') {
+            // MENUNGGU
+            $order->update(['payment_status' => 1]);
+        }
+
+        return response()->json(['message' => 'Callback received successfully']);
     }
 }

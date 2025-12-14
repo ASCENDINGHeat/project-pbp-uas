@@ -25,14 +25,16 @@ Route::middleware('auth:sanctum')->group(function () {
     //cart and order routes
     Route::post('/cart/{id}', [CartController::class, 'addToCart']);
     Route::get('/cart', [CartController::class, 'index']);
-    Route::post('/wishlist',[WishListController::class,'toggle']);
-    Route::get('/wishlist',[WishListController::class,'view']);
-    Route::post('/checkout',[OrderController::class,'checkout']);
-    Route::get('/orders',[OrderController::class,'index']);
+    Route::put('/cart/update/{id}', [CartController::class, 'update']);
+    Route::delete('cart/delete/{id}', [CartController::class, 'destroy']);
+    Route::post('/wishlist', [WishListController::class, 'toggle']);
+    Route::get('/wishlist', [WishListController::class, 'view']);
+    Route::post('/checkout', [OrderController::class, 'checkout']);
+    Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
 });
 
 Route::get('/product', [ProductController::class, 'index']); // Product List
 Route::get('/product/{id}', [ProductController::class, 'show']); // Product Page
-
+Route::post('/midtrans-callback', [OrderController::class, 'receive']);
 Route::get('/vendor/{id}/products', [VendorController::class, 'vendorProductsView']); // Vendor's Products
