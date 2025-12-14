@@ -9,9 +9,11 @@ use App\Models\Product;
 
 class VendorController extends Controller
 {
-    public function register(Request $request){
+    public function register(Request $request)
+    {
         $user = Auth::user();
-        if ($user->vendor){
+        if ($user->vendor)
+        {
             return response()->json([
                 'message' => 'User is already a vendor.',
                 'vendor' => $user->vendor
@@ -36,11 +38,13 @@ class VendorController extends Controller
         ], 201);
     }
 
-    public function vendorProductsView($id){
+    public function vendorProductsView($id)
+    {
         // Logic: Find vendor by ID and load their products simultaneously
         $vendor = Vendor::with('products')->find($id);
 
-        if (!$vendor){
+        if (!$vendor)
+        {
             return response()->json([
                 'message' => 'Vendor not found.'
             ], 404);
@@ -53,7 +57,8 @@ class VendorController extends Controller
         ], 200);
     }
 
-    public function vendorProfile(){
+    public function vendorProfile()
+    {
         $user = Auth::user();
         $vendor = $user->vendor;
 

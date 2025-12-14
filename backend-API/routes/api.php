@@ -8,6 +8,7 @@ use App\Http\Controllers\VendorController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishListController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\VendorOrderController;
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -28,6 +29,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/checkout', [OrderController::class, 'checkout']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::get('/vendor/orders', [App\Http\Controllers\VendorOrderController::class, 'index']);
+    Route::get('/vendor/orders/{id}', [App\Http\Controllers\VendorOrderController::class, 'show']);
+    Route::patch('/vendor/orders/{id}/status', [App\Http\Controllers\VendorOrderController::class, 'updateStatus']);
 });
 
 Route::get('/product', [ProductController::class, 'index']); // Product List
