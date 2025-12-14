@@ -232,7 +232,7 @@
         }
         // Tambah ke cart dan pastikan disimpan sebelum navigasi
         handleAddToCart();
-        goto('/web/checkout');
+        goto('/web/co');
     }
 
 </script>
