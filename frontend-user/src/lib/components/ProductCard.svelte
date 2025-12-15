@@ -1,102 +1,184 @@
 <script lang="ts">
     import { PUBLIC_API_URL, PUBLIC_STORAGE_URL } from '$env/static/public';
-    import { goto } from '$app/navigation'; // Import goto untuk redirect
+    import { goto } from '$app/navigation';
+    import { browser } from '$app/environment';
 
     export let product: {
         id: number;
         name: string;
         price: number;
-        stock_quantity: number; 
-        image: string; 
+        stock_quantity: number;
+        image: string;
         rating?: number;
         is_wishlisted?: boolean;
     };
 
     let isLoading = false;
-    
-    // Inisialisasi status wishlist dari props produk
-    let isWishlisted = product.is_wishlisted || false; 
-    
-    // Agar status update jika data produk dari parent berubah (misal saat search/filter)
-    $: isWishlisted = product.is_wishlisted || false;
+    let isWishlistLoading = false;
 
-    const STORAGE_BASE = PUBLIC_STORAGE_URL.endsWith('/') ? PUBLIC_STORAGE_URL : `${PUBLIC_STORAGE_URL}/`;
+    // State management untuk wishlist - PERBAIKAN: Tidak auto-reset
+    let isWishlisted = product.is_wishlisted || false;
+    let currentProductId = product.id;
+
+    // Reset state hanya jika produk ID berubah
+    $: if (product.id !== currentProductId) {
+        isWishlisted = product.is_wishlisted || false;
+        currentProductId = product.id;
+    }
+
+    // Image URL handling
+    const STORAGE_BASE = PUBLIC_STORAGE_URL.endsWith('/') 
+        ? PUBLIC_STORAGE_URL 
+        : `${PUBLIC_STORAGE_URL}/`;
     
-    $: imageUrl = product.image && product.image.startsWith('http') 
-        ? product.image 
+    $: imageUrl = product.image && product.image.startsWith('http')
+        ? product.image
         : `${STORAGE_BASE}storage/${product.image}`;
 
-    // --- NAVIGASI KE DETAIL PRODUK ---
-    function goToDetail() {
+    // Helper function untuk mendapatkan token
+    function getAuthToken(): string | null {
+        if (!browser) return null;
+        return localStorage.getItem('auth_token') || localStorage.getItem('token');
+    }
+
+    // Navigasi ke detail produk
+    function goToDetail(e: MouseEvent | KeyboardEvent) {
+        const target = e.target as HTMLElement;
+        // Jangan navigate jika klik tombol
+        if (target.closest('button') || target.closest('.action-blocker')) {
+            return;
+        }
         goto(`/web/product/${product.id}`);
     }
 
-    // --- FUNGSI ADD TO CART (DIPERBAIKI) ---
-    async function handleAddToCart() {
-        const token = localStorage.getItem('auth_token');
-        if (!token) return alert('Silakan login terlebih dahulu');
+    // FUNGSI ADD TO CART - DIPERBAIKI
+    async function handleAddToCart(event: MouseEvent) {
+        event.stopPropagation();
+        
+        const token = getAuthToken();
+        
+        if (!token) {
+            alert('Silakan login terlebih dahulu');
+            goto('/login');
+            return;
+        }
+
+        // Validasi stok
+        if (product.stock_quantity <= 0) {
+            alert('Maaf, stok barang ini sedang habis');
+            return;
+        }
 
         isLoading = true;
+        
         try {
-            const res = await fetch(`${PUBLIC_API_URL}/cart/${product.id}`, {
+            console.log('Adding to cart:', {
+                url: `${PUBLIC_API_URL}/cart/${product.id}`,
+                productId: product.id,
+                quantity: 1
+            });
+
+            const response = await fetch(`${PUBLIC_API_URL}/cart/${product.id}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify({ quantity: 1 }) 
+                body: JSON.stringify({ quantity: 1 })
             });
-            
-            const data = await res.json();
 
-            if (res.ok) {
-                // FIX: Redirect ke halaman keranjang setelah sukses
-                alert("Berhasil masuk keranjang!");
-                goto('/web/cart'); 
+            const data = await response.json();
+            console.log('Cart response:', data);
+
+            if (response.ok) {
+                alert('Berhasil ditambahkan ke keranjang!');
+                // Optional: redirect ke cart atau tetap di halaman
+                // goto('/web/cart');
             } else {
-                alert(data.message || 'Gagal menambahkan');
+                // Handle error dari backend
+                if (response.status === 401) {
+                    alert('Sesi Anda telah berakhir. Silakan login kembali.');
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('token');
+                    goto('/login');
+                } else if (response.status === 404) {
+                    alert('Produk tidak ditemukan');
+                } else if (response.status === 400) {
+                    alert(data.message || 'Stok tidak mencukupi');
+                } else {
+                    alert(data.message || 'Gagal menambahkan ke keranjang');
+                }
             }
-        } catch (err) {
-            console.error(err);
-            alert('Terjadi kesalahan koneksi');
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            alert('Terjadi kesalahan koneksi. Pastikan backend Anda berjalan.');
         } finally {
             isLoading = false;
         }
     }
 
-    // --- FUNGSI TOGGLE WISHLIST (DIPERBAIKI) ---
-    async function handleToggleWishlist() {
-        const token = localStorage.getItem('auth_token');
-        if (!token) return alert('Silakan login terlebih dahulu');
+    // FUNGSI TOGGLE WISHLIST - DIPERBAIKI
+    async function handleToggleWishlist(event: MouseEvent) {
+        event.stopPropagation();
+        
+        const token = getAuthToken();
+        
+        if (!token) {
+            alert('Silakan login terlebih dahulu');
+            goto('/login');
+            return;
+        }
 
-        // 1. Simpan state lama buat jaga-jaga kalau error
+        // Simpan state sebelumnya untuk rollback jika error
         const previousState = isWishlisted;
-
-        // 2. Optimistic UI: Ubah warna LANGSUNG sebelum fetch agar terasa cepat
-        isWishlisted = !isWishlisted; 
+        
+        // Optimistic UI update
+        isWishlisted = !isWishlisted;
+        isWishlistLoading = true;
 
         try {
-            // URL Backend: /api/wishlist/{id}
-            const res = await fetch(`${PUBLIC_API_URL}/wishlist/${product.id}`, {
+            console.log('Toggling wishlist:', {
+                url: `${PUBLIC_API_URL}/wishlist/${product.id}`,
+                productId: product.id,
+                currentState: isWishlisted
+            });
+
+            const response = await fetch(`${PUBLIC_API_URL}/wishlist/${product.id}`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 }
             });
-            
-            const data = await res.json();
-            
-            if (!res.ok) {
-                 // 3. Jika server error, KEMBALIKAN warna ke semula
-                 isWishlisted = previousState;
-                 alert(data.message || "Gagal update wishlist");
+
+            const data = await response.json();
+            console.log('Wishlist response:', data);
+
+            if (!response.ok) {
+                // Rollback jika error
+                isWishlisted = previousState;
+                
+                if (response.status === 401) {
+                    alert('Sesi Anda telah berakhir. Silakan login kembali.');
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('token');
+                    goto('/login');
+                } else {
+                    alert(data.message || 'Gagal mengubah wishlist');
+                }
+            } else {
+                // Berhasil - state sudah diupdate di optimistic UI
+                console.log('Wishlist updated successfully:', data.status);
             }
-        } catch (err) {
-            console.error(err);
-            // Jika koneksi putus, kembalikan warna
-            isWishlisted = previousState; 
-            alert("Gagal menghubungi server");
+        } catch (error) {
+            console.error('Error toggling wishlist:', error);
+            // Rollback jika koneksi error
+            isWishlisted = previousState;
+            alert('Terjadi kesalahan koneksi. Pastikan backend Anda berjalan.');
+        } finally {
+            isWishlistLoading = false;
         }
     }
 </script>
@@ -104,23 +186,43 @@
 <div 
     class="product-card" 
     on:click={goToDetail} 
-    on:keydown={(e) => e.key === 'Enter' && goToDetail()}
+    on:keydown={(e) => e.key === 'Enter' && goToDetail(e)}
     role="button"
     tabindex="0"
 >
     <div class="product-image">
-        <img src={imageUrl} alt={product.name} on:error={(e) => e.target.src = '/images/placeholder.jpg'} />
+        <img 
+            src={imageUrl} 
+            alt={product.name} 
+            on:error={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/placeholder.jpg';
+            }}
+        />
         
-        <button 
-            type="button" 
-            class="watchlist-btn" 
-            on:click|stopPropagation={handleToggleWishlist}
-            title={isWishlisted ? "Hapus dari Wishlist" : "Tambah ke Wishlist"}
+        <!-- Wishlist Button -->
+        <div 
+            class="action-blocker wishlist-pos" 
+            on:click|stopPropagation 
+            on:keydown|stopPropagation 
+            role="none"
         >
-            {#if isWishlisted}
-                ❤️ {:else}
-                🤍 {/if}
-        </button>
+            <button 
+                type="button" 
+                class="watchlist-btn" 
+                on:click={handleToggleWishlist}
+                disabled={isWishlistLoading}
+                title={isWishlisted ? "Hapus dari Wishlist" : "Tambah ke Wishlist"}
+            >
+                {#if isWishlistLoading}
+                    <span style="font-size: 1.2rem;">⏳</span>
+                {:else if isWishlisted}
+                    <span style="color: red; font-size: 1.5rem; line-height: 1;">❤️</span>
+                {:else}
+                    <span style="color: gray; font-size: 1.5rem; line-height: 1;">🤍</span>
+                {/if}
+            </button>
+        </div>
 
         {#if product.stock_quantity <= 0}
             <div class="out-of-stock">Habis Stok</div>
@@ -139,25 +241,27 @@
             <span class="price">Rp {product.price.toLocaleString('id-ID')}</span>
         </div>
 
-        <button 
-            type="button"    
-            class="btn-add-cart" 
-            on:click|stopPropagation={handleAddToCart} 
-            disabled={product.stock_quantity <= 0 || isLoading}
-        >
-            {#if isLoading}
-                Loading...
-            {:else if product.stock_quantity <= 0}
-                Habis Stok
-            {:else}
-                Tambah ke Keranjang
-            {/if}
-        </button>
+        <!-- Add to Cart Button -->
+        <div class="action-blocker" on:click|stopPropagation role="none">
+            <button 
+                type="button"    
+                class="btn-add-cart" 
+                on:click={handleAddToCart} 
+                disabled={isLoading || product.stock_quantity <= 0}
+            >
+                {#if isLoading}
+                    Loading...
+                {:else if product.stock_quantity <= 0}
+                    Habis Stok
+                {:else}
+                    Tambah ke Keranjang
+                {/if}
+            </button>
+        </div>
     </div>
 </div>
 
 <style>
-    /* CSS TETAP SAMA SEPERTI SEBELUMNYA */
     .product-card {
         background: #fff;
         border-radius: 12px;
@@ -165,6 +269,7 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transition: transform 0.2s, box-shadow 0.2s;
         cursor: pointer;
+        position: relative;
     }
 
     .product-card:hover {
@@ -201,10 +306,14 @@
         background: rgba(0, 0, 0, 0.6);
         color: #fff;
         font-weight: 700;
+        z-index: 5;
+        pointer-events: none;
     }
 
     .product-info {
         padding: 16px;
+        position: relative;
+        z-index: 2;
     }
 
     .product-name {
@@ -229,23 +338,62 @@
         font-size: 0.85rem;
     }
 
-    .stars {
-        color: #ffc107;
+    .stars { 
+        color: #ffc107; 
+    }
+    
+    .rating-value { 
+        color: #666; 
+        font-weight: 600; 
+    }
+    
+    .product-price { 
+        margin-bottom: 12px; 
+    }
+    
+    .price { 
+        font-size: 1.2rem; 
+        font-weight: 700; 
+        color: #8E42E1; 
     }
 
-    .rating-value {
-        color: #666;
-        font-weight: 600;
+    /* Action Blocker - Penting untuk mencegah event bubbling */
+    .action-blocker {
+        position: relative;
+        z-index: 20;
+        display: block;
     }
 
-    .product-price {
-        margin-bottom: 12px;
+    .wishlist-pos {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: auto;
     }
 
-    .price {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #8E42E1;
+    .watchlist-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        padding: 8px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .watchlist-btn:hover:not(:disabled) {
+        transform: scale(1.15);
+        background: white;
+    }
+
+    .watchlist-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
     .btn-add-cart {
@@ -258,35 +406,14 @@
         font-weight: 600;
         cursor: pointer;
         transition: opacity 0.2s;
-        position: relative; 
-        z-index: 2;
     }
 
-    .btn-add-cart:hover:not(:disabled) {
-        opacity: 0.9;
+    .btn-add-cart:hover:not(:disabled) { 
+        opacity: 0.9; 
     }
-
-    .btn-add-cart:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .watchlist-btn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(255, 255, 255, 0.85);
-        border: none;
-        font-size: 1.4rem;
-        padding: 4px 6px;
-        border-radius: 50%;
-        cursor: pointer;
-        transition: transform 0.2s ease, background 0.2s;
-        z-index: 2; 
-    }
-
-    .watchlist-btn:hover {
-        transform: scale(1.15);
-        background: white;
+    
+    .btn-add-cart:disabled { 
+        opacity: 0.5; 
+        cursor: not-allowed; 
     }
 </style>

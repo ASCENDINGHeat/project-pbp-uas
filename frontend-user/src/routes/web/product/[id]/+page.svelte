@@ -1,46 +1,171 @@
 <script lang="ts">
     import type { PageData } from './$types';
     import { goto } from '$app/navigation';
-    import { addToCart } from '$lib/stores/cart';
-    
+    import { addToCart as addToLocalCart } from '$lib/stores/cart'; // Rename agar tidak bentrok
+    import { PUBLIC_API_URL } from '$env/static/public';
+    import { onMount } from 'svelte';
+    import { isLoggedIn } from '$lib/stores/auth';
+
     export let data: PageData;
-    
-    // [FIX] Reactive statement to extract product from data
+
+    // Reactive statement untuk mengambil data produk
     $: ({ product } = data);
-
+    
     let quantity = 1;
+    let isWishlisted = false;
+    let isLoadingCart = false;
+    let isLoadingWishlist = false;
 
-    // [FIX] Updated Interface to match mapped data in +page.ts
-    interface FrontendProduct {
-        id: string;
-        name: string;
-        price: number;
-        image: string;
-        category: string;
-        rating: number;
-        reviews: number;
-        inStock: boolean;
-        description: string;
-        stock: number;
-        shop_name: string;
-        status: string; // Added
-        sold: number;   // Added
+    // Update slug kategori saat produk berubah
+    $: categorySlug = product ? 
+        product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '') : '';
+
+    // --- LOGIKA FETCH WISHLIST STATUS SAAT MOUNT ---
+    onMount(async () => {
+        if ($isLoggedIn) {
+            await checkWishlistStatus();
+        }
+    });
+
+    // Cek apakah produk ini ada di wishlist user
+    async function checkWishlistStatus() {
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (!token) return;
+
+            const res = await fetch(`${PUBLIC_API_URL}/wishlist`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (res.ok) {
+                const responseData = await res.json();
+                // Asumsi responseData.data adalah array wishlist item yang memiliki field 'product_id'
+                const wishItems = responseData.data || [];
+                // Cek apakah ID produk saat ini ada di daftar wishlist
+                isWishlisted = wishItems.some((item: any) => String(item.product_id) === String(product.id));
+            }
+        } catch (error) {
+            console.error("Gagal memuat status wishlist:", error);
+        }
     }
 
-    // [FIX] Make categorySlug reactive because 'product' changes on navigation
-    $: categorySlug = product ? product.category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '') : '';
+    // --- FUNGSI TOGGLE WISHLIST ---
+    async function toggleWishlist() {
+        if (!$isLoggedIn) {
+            alert("Silakan login terlebih dahulu untuk menyimpan ke wishlist.");
+            goto('/login');
+            return;
+        }
 
+        if (isLoadingWishlist) return;
+        isLoadingWishlist = true;
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`${PUBLIC_API_URL}/wishlist/${product.id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+                // Update state berdasarkan respon server atau toggle manual
+                if (result.status === 'added') {
+                    isWishlisted = true;
+                } else if (result.status === 'removed') {
+                    isWishlisted = false;
+                } else {
+                    // Fallback jika respon beda
+                    isWishlisted = !isWishlisted;
+                }
+                goto('/web/wishlist')
+            } else {
+                alert(result.message || "Gagal mengubah wishlist.");
+            }
+        } catch (error) {
+            console.error("Error wishlist:", error);
+            alert("Terjadi kesalahan koneksi.");
+        } finally {
+            isLoadingWishlist = false;
+        }
+    }
+
+    // --- FUNGSI ADD TO CART (BACKEND) ---
+    async function addToCartBackend() {
+        if (!$isLoggedIn) {
+            // Jika belum login, simpan ke local store saja (opsional) atau redirect
+            // Di sini kita redirect user agar data tersimpan di DB
+            if (confirm("Anda perlu login untuk berbelanja. Ke halaman login?")) {
+                goto('/login');
+            }
+            return;
+        }
+
+        if (isLoadingCart) return;
+        isLoadingCart = true;
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`${PUBLIC_API_URL}/cart/${product.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    quantity: quantity
+                })
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+                // Opsional: Update store lokal agar badge keranjang di header terupdate realtime
+                addToLocalCart({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    quantity
+                });
+
+                // Arahkan ke halaman keranjang
+                goto('/web/cart');
+            } else {
+                alert(result.message || "Gagal menambahkan ke keranjang.");
+            }
+        } catch (error) {
+            console.error("Error add to cart:", error);
+            alert("Terjadi kesalahan saat menghubungi server.");
+        } finally {
+            isLoadingCart = false;
+        }
+    }
+
+    // --- HELPER FUNCTIONS ---
     function goToCategory() {
         goto(`/web/categories/${categorySlug}`);
     }
 
     const formatIDR = (num: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
-
-    function increaseQty() { if (quantity < product.stock) quantity++; }
-    function decreaseQty() { if (quantity > 1) quantity--; }
+    
+    function increaseQty() { 
+        if (quantity < product.stock) quantity++; 
+    }
+    
+    function decreaseQty() { 
+        if (quantity > 1) quantity--;
+    }
 
     function goBack() {
-        // ... (Keep existing goBack logic) ...
         const currentPath = location.pathname + location.search;
         let refPath: string | null = null;
         if (document.referrer) {
@@ -70,22 +195,12 @@
         if (!str) return str;
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
-
-    function addAndGoCart() {
-        addToCart({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            quantity
-        });
-        goto('/web/cart');
-    }
 </script>
 
 <svelte:head>
     <title>{product?.name || 'Loading...'} | Store</title>
 </svelte:head>
+
 {#if product}
 <div class="page-content">
     
@@ -159,11 +274,25 @@
                 </div>
 
                 <div class="button-group">
-                    <button class="btn btn-outline"><span>♡</span> Wishlist</button>
-                    <button class="btn btn-primary" on:click={addAndGoCart}>+ Keranjang</button>
+                    <button 
+                        class="btn {isWishlisted ? 'btn-wishlist-active' : 'btn-outline'}" 
+                        on:click={toggleWishlist}
+                        disabled={isLoadingWishlist}
+                    >
+                        <span>{isWishlisted ? '♥' : '♡'}</span> 
+                        {isWishlisted ? 'Disimpan' : 'Wishlist'}
+                    </button>
+
+                    <button 
+                        class="btn btn-primary" 
+                        on:click={addToCartBackend}
+                        disabled={isLoadingCart || product.stock <= 0}
+                    >
+                        {isLoadingCart ? 'Memproses...' : '+ Keranjang'}
+                    </button>
                 </div>
 
-                </section>
+            </section>
         </div> 
         
         <section class="description-section">
@@ -183,31 +312,28 @@
 {/if}
 
 <style>
-    /* --- Layout Dasar --- */
+    /* Tambahan Style untuk tombol Wishlist Aktif */
+    .btn-wishlist-active {
+        border: 2px solid #ef4444; 
+        background: #fff; 
+        color: #ef4444;
+    }
+
+    /* --- Layout Dasar (Sama seperti sebelumnya) --- */
     .page-content {
         background-color: #f8f9fa;
         min-height: 100vh;
-        
-        /* PERBAIKAN UTAMA: Ubah padding-top jadi 10px saja. 
-           Sebelumnya 25px/40px terlalu besar, makanya tombol turun jauh.
-           Dengan 10px, tombol akan 'duduk' manis tepat di bawah garis ungu. */
         padding: 10px 20px 40px 20px; 
-        
         box-sizing: border-box;
     }
 
     /* --- CONTAINER NAVIGASI --- */
     .nav-container {
-        /* Tetap 1200px agar LURUS dengan "All Categories" & Gambar Produk */
         max-width: 1200px;
         width: 100%;
         margin: 0 auto; 
-        
         display: flex;
         justify-content: flex-start;
-        
-        /* Hapus margin-top, dan beri jarak bawah sedikit saja (15px) 
-           agar tidak nempel dengan gambar produk */
         margin-top: 0;
         padding-bottom: 15px; 
     }
@@ -217,17 +343,12 @@
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        
-        /* Pastikan Margin 0 agar tidak terdorong turun */
-        margin: 0; 
-        
-        padding: 8px 16px; /* Sedikit diperkecil padding-nya agar lebih pas */
-        
-        background: #111111; 
+        margin: 0;
+        padding: 8px 16px;
+        background: #111111;
         color: #ef4444;      
         border: none;
         border-radius: 50px; 
-        
         font-weight: 700;
         font-size: 0.9rem;
         cursor: pointer;
@@ -243,7 +364,7 @@
     
     .btn-back svg { stroke: currentColor; }
 
-    /* --- Grid Layout (Produk) - Tidak Berubah --- */
+    /* --- Grid Layout (Produk) --- */
     .product-grid {
         max-width: 1200px;
         margin: 0 auto;
@@ -266,11 +387,12 @@
     .hero-image { width: 100%; height: 100%; object-fit: cover; }
     
     .info-wrapper {
-        display: flex; flex-direction: column; gap: 24px;
+        display: flex;
+        flex-direction: column; gap: 24px;
         position: sticky; top: 20px; 
     }
 
-    /* --- Styles Lainnya (Tetap) --- */
+    /* --- Styles Lainnya --- */
     .specs-box-dark {
         background: linear-gradient(180deg, #7B4BFF 0%, #8E42E1 60%);
         color: #fff;
@@ -290,7 +412,8 @@
         display: inline-flex; align-items: center; gap: 8px;
         background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe;
         font-size: 0.85rem; font-weight: 700; padding: 6px 12px; 
-        border-radius: 100px; margin-bottom: 16px; width: fit-content;
+        border-radius: 100px; margin-bottom: 16px;
+        width: fit-content;
     }
     .product-title { margin: 0 0 12px; font-size: 2rem; line-height: 1.3; color: #111; letter-spacing: -0.5px; }
     .price-tag { font-size: 2.2rem; font-weight: 800; color: #111; }
@@ -314,6 +437,7 @@
     .btn { flex: 1; padding: 14px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; gap: 8px; border: none;}
     .btn-outline { border: 2px solid rgba(142,66,225,0.12); background: #fff; color: #3b2b5c; }
     .btn-primary { background: linear-gradient(135deg,#8E42E1 0%, #6B3BFF 100%); color: #fff; box-shadow: 0 8px 20px rgba(107,59,255,0.12); }
+    .btn-primary:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; }
 
     .description-section { grid-column: 1 / -1; background: #fff; border-radius: 20px; padding: 40px; border: 1px solid #e5e7eb; margin-top: 20px; }
     .tabs { display: flex; gap: 30px; border-bottom: 1px solid #e5e7eb; margin-bottom: 25px; }
