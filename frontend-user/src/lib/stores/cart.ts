@@ -1,16 +1,21 @@
 import { writable } from 'svelte/store';
 
 export type CartItem = {
-	id: string;
+	id: string;       // ID dari tabel cart (Primary Key)
+	product_id: number;
 	name: string;
 	price: number;
 	image: string;
 	quantity: number;
+	stock?: number;   // Info stok dari backend
 };
 
 export const cart = writable<CartItem[]>([]);
 
-// Fungsi untuk menambah item ke keranjang
+// Store baru: Menyimpan daftar ID (cart.id) yang dicentang user
+export const selectedItemIds = writable<string[]>([]);
+
+// Helper: Tambah item (opsional, untuk optimis UI)
 export function addToCart(item: CartItem) {
 	cart.update(items => {
 		const existing = items.find(i => i.id === item.id);
@@ -23,12 +28,15 @@ export function addToCart(item: CartItem) {
 	});
 }
 
-// Fungsi untuk menghapus item dari keranjang
+// Helper: Hapus item
 export function removeFromCart(id: string) {
 	cart.update(items => items.filter(i => i.id !== id));
+	// Hapus juga dari daftar centang jika itemnya dihapus
+	selectedItemIds.update(ids => ids.filter(itemId => itemId !== id));
 }
 
-// Fungsi untuk mengosongkan keranjang
+// Helper: Reset
 export function clearCart() {
 	cart.set([]);
+	selectedItemIds.set([]);
 }
