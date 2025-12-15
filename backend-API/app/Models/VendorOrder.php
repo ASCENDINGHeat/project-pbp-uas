@@ -26,7 +26,7 @@ class VendorOrder extends Model
      */
     public function parentOrder(): BelongsTo
     {
-        return $this->belongsTo(parentOrder::class, 'parent_order_id');
+        return $this->belongsTo(ParentOrder::class, 'parent_order_id');
     }
 
     /**
