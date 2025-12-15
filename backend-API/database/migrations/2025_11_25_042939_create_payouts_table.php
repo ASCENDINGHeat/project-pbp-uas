@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('payouts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('vendor_id')->constrained('vendors');
-            $table->decimal('amount', 12, 2);
+            $table->decimal('amount', 20, 2);
             $table->string('status', 50)->default('pending');
             $table->dateTime('payout_date')->nullable();
             $table->timestamps();

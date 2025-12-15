@@ -363,6 +363,7 @@
                                             <option value="ram">RAM</option>
                                             <option value="casing">Casing</option>
                                             <option value="psu">PSU</option>
+                                            <option value="pc-ready">PC Ready</option>
                                         </select>
                                     </div>
                                     <div class="form-group half">

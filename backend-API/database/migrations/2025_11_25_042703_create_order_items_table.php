@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('vendor_order_id')->constrained('vendor_orders');
             $table->foreignId('product_id')->constrained('products');
             $table->integer('quantity');
-            $table->decimal('unit_price', 10, 2);
+            $table->decimal('unit_price', 20, 2);
             $table->timestamps();
         });
     }

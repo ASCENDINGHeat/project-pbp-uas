@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('parent_order_id')->constrained('parent_orders');
             $table->foreignId('vendor_id')->constrained('vendors');
-            $table->decimal('order_total', 12, 2);
-            $table->decimal('commission_fee', 12, 2);
-            $table->decimal('net_amount', 12, 2);
+            $table->decimal('order_total', 20, 2);
+            $table->decimal('commission_fee', 20, 2);
+            $table->decimal('net_amount', 20, 2);
             $table->string('shipping_status', 50)->default('processing');
             $table->timestamps();
         });

@@ -2,32 +2,61 @@
     import { goto } from '$app/navigation';
     import Breadcrumb from '$lib/components/Breadcrumb.svelte';
     import { onMount } from 'svelte';
-    import { pcReadyProducts, getPcReadyProducts, type Product } from '$lib/data/pc-ready-products';
+    import { PUBLIC_API_URL } from '$env/static/public';
+    import { PUBLIC_STORAGE_URL } from '$env/static/public';
+
+    interface Product {
+        id: string;
+        name: string;
+        price: number;
+        image: string;
+        rating: number;
+    }
 
     let pcReady: Product[] = [];
+    let isLoading = true;
 
     const breadcrumbItems = [
         { label: 'Home', href: '/web' },
         { label: 'PC Ready', active: true }
     ];
 
-    onMount(() => {
-        pcReady = getPcReadyProducts(8);
+    onMount(async () => {
+        try {
+            // Fetch produk dengan kategori 'pc-ready'
+            // Pastikan Anda sudah menambahkan produk dengan kategori ini di database via API/Vendor Dashboard
+            const res = await fetch(`${PUBLIC_API_URL}/product?category=pc-ready`);
+            
+            if (res.ok) {
+                const data = await res.json();
+                const rawProducts = data.data || [];
+
+                // Mapping data API (Backend) -> Format Frontend
+                pcReady = rawProducts.map((item: any) => ({
+                    id: String(item.id),
+                    name: item.title, // Backend 'title' -> Frontend 'name'
+                    price: Number(item.price),
+                    // Gunakan image_url dari backend atau placeholder
+                    image: item.image_url || '/images/placeholder.png',
+                    rating: 5.0 // Default rating
+                }));
+            } else {
+                console.error("Gagal mengambil data PC Ready");
+            }
+        } catch (err) {
+            console.error("Error fetching API:", err);
+        } finally {
+            isLoading = false;
+        }
     });
 
     // --- LOGIC RESPONSIVE KOLOM (Sesuai kode Anda) ---
     let innerWidth = 0;
-    
-    // Logic: 
-    // HP (< 640px) = 2 Kolom
-    // Tablet (< 1200px) = 4 Kolom
-    // Desktop (> 1200px) = 6 Kolom
     $: responsiveColumns = innerWidth < 640 ? 2 : (innerWidth < 1200 ? 4 : 6);
 
     function handleAnchorClick(event: MouseEvent, product: Product) {
-        // Cek jika yang diklik adalah tombol wishlist
         if ((event.target as HTMLElement).closest('.wishlist-btn')) {
-            return; 
+            return;
         }
 
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || (event as any).button !== 0) {
@@ -37,14 +66,13 @@
         goto(`/web/product-pcready/${product.id}`);
     }
 
-    // Helper untuk format harga
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(price);
     };
 
     function handleWishlistClick() {
         console.log('Wishlist clicked');
-        // Logika wishlist bisa dimasukkan di sini
+        // Tambahkan logika wishlist store di sini jika diperlukan
     }
 </script>
 
