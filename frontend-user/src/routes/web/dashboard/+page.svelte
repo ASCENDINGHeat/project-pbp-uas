@@ -25,6 +25,11 @@
     let prodStock: number | null = null;
     let prodPrice: number | null = null;
     let prodDesc = '';
+    
+    // --- COMPATIBILITY FEATURES ---
+    let prodSocket = '';
+    let prodMemory = '';
+    
     let prodImageFile: File | null = null;
     let prodImagePreview: string | null = null;
     let isSubmitting = false;
@@ -52,7 +57,7 @@
             const resProfile = await fetch(`${PUBLIC_API_URL}/vendor/profile`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
             });
-            
+
             if (resProfile.ok) {
                 const data = await resProfile.json();
                 vendorProfile = data.vendor;
@@ -68,7 +73,6 @@
 
             // 3. Fetch Orders
             await fetchOrders();
-
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         }
@@ -79,9 +83,9 @@
             const res = await fetch(`${PUBLIC_API_URL}/vendor/${vendorId}/products`, {
                  headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
             });
+
             if (res.ok) {
                 const data = await res.json();
-                // API structure: data.data.products
                 myProducts = data.data.products || [];
 
                 // Calculate "Stok Menipis"
@@ -96,9 +100,9 @@
             const res = await fetch(`${PUBLIC_API_URL}/vendor/orders`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
             });
+
             if (res.ok) {
                 const data = await res.json();
-                // Assuming data is an array of orders inside 'data' or root
                 myOrders = Array.isArray(data) ? data : (data.data || []);
 
                 // Calculate Stats
@@ -129,7 +133,7 @@
 
     async function handleCreateProduct() {
         if (!prodName || !prodPrice || !prodStock) return alert("Mohon lengkapi data wajib.");
-        
+
         isSubmitting = true;
         try {
             const formData = new FormData();
@@ -139,6 +143,19 @@
             if (prodCategory) formData.append('category', prodCategory);
             if (prodDesc) formData.append('description', prodDesc);
             if (prodImageFile) formData.append('image', prodImageFile);
+
+            // --- COMPATIBILITY LOGIC ---
+            // Construct 'specs' string for the simulator checker (e.g. "AM5, DDR5")
+            let specsArr: string[] = [];
+            if (prodSocket) specsArr.push(prodSocket);
+            if (prodMemory) specsArr.push(prodMemory);
+            
+            if (specsArr.length > 0) {
+                formData.append('details[specs]', specsArr.join(', '));
+            }
+            // Store structured data as well
+            if (prodSocket) formData.append('details[socket]', prodSocket);
+            if (prodMemory) formData.append('details[memory]', prodMemory);
 
             const res = await fetch(`${PUBLIC_API_URL}/product`, {
                 method: 'POST',
@@ -160,14 +177,14 @@
     }
 
     function resetForm() {
-        prodName = ''; prodCategory = ''; prodStock = null; prodPrice = null; 
+        prodName = '';
+        prodCategory = ''; prodStock = null; prodPrice = null; 
         prodDesc = ''; prodImageFile = null; prodImagePreview = null;
+        prodSocket = ''; prodMemory = '';
     }
 
     // --- DERIVED VIEW HELPERS ---
-    // Get top 5 recent orders
     $: recentOrders = myOrders.slice(0, 5);
-
 </script>
 
 <svelte:head>
@@ -339,6 +356,7 @@
                                             <option value="">Pilih Kategori</option>
                                             <option value="processor">Processor</option>
                                             <option value="motherboard">Motherboard</option>
+                                            <option value="cooler">CPU Cooler (HSF)</option>
                                             <option value="vga">VGA Card</option>
                                             <option value="monitor">Monitor</option>
                                             <option value="storage">Storage</option>
@@ -352,6 +370,36 @@
                                         <input type="number" id="prod-stock" bind:value={prodStock} placeholder="0" min="0" required />
                                     </div>
                                 </div>
+
+                                {#if ['processor', 'motherboard', 'cooler', 'ram'].includes(prodCategory)}
+                                    <div class="form-row" style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 1px dashed #bae6fd;">
+                                        
+                                        {#if ['processor', 'motherboard', 'cooler'].includes(prodCategory)}
+                                            <div class="form-group half">
+                                                <label for="prod-socket">Socket (Kompatibilitas)</label>
+                                                <select id="prod-socket" bind:value={prodSocket}>
+                                                    <option value="">- Pilih Socket -</option>
+                                                    <option value="AM4">AM4</option>
+                                                    <option value="AM5">AM5</option>
+                                                    <option value="LGA1700">LGA 1700</option>
+                                                    <option value="LGA1200">LGA 1200</option>
+                                                </select>
+                                            </div>
+                                        {/if}
+
+                                        {#if ['motherboard', 'ram'].includes(prodCategory)}
+                                            <div class="form-group half">
+                                                <label for="prod-memory">Tipe Memori</label>
+                                                <select id="prod-memory" bind:value={prodMemory}>
+                                                    <option value="">- Pilih Tipe -</option>
+                                                    <option value="DDR4">DDR4</option>
+                                                    <option value="DDR5">DDR5</option>
+                                                </select>
+                                            </div>
+                                        {/if}
+
+                                    </div>
+                                {/if}
 
                                 <div class="form-group">
                                     <label for="prod-price">Harga (Rp)</label>
@@ -501,72 +549,19 @@
     .status-badge.cancelled { background: #f87171; color: white; }
 
     /* --- STYLE UNTUK GRID PRODUK & KOTAK TAMBAH --- */
-    .products-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 20px;
-    }
+    .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
 
-    .product-card {
-        background: white;
-        border-radius: 12px;
-        padding: 15px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        transition: transform 0.2s;
-    }
+    .product-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; transition: transform 0.2s; }
 
     /* Style Khusus Kotak Tambah Produk */
-    .product-card.add-new-card {
-        border: 2px dashed #ccc;
-        background: transparent;
-        box-shadow: none;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        min-height: 250px;
-        color: #666;
-    }
+    .product-card.add-new-card { border: 2px dashed #ccc; background: transparent; box-shadow: none; align-items: center; justify-content: center; cursor: pointer; min-height: 250px; color: #666; }
+    .product-card.add-new-card:hover { border-color: #4ADE80; color: #4ADE80; background: #f0fdf4; }
 
-    .product-card.add-new-card:hover {
-        border-color: #4ADE80;
-        color: #4ADE80;
-        background: #f0fdf4;
-    }
-
-    .add-icon-wrapper {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: #eee;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 10px;
-        transition: background 0.2s;
-    }
-    
-    .product-card.add-new-card:hover .add-icon-wrapper {
-        background: #4ADE80;
-        color: white;
-    }
+    .add-icon-wrapper { width: 60px; height: 60px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; transition: background 0.2s; }
+    .product-card.add-new-card:hover .add-icon-wrapper { background: #4ADE80; color: white; }
 
     /* Style Kartu Produk Biasa */
-    .product-image-placeholder {
-        width: 100%;
-        height: 140px;
-        background: #f1f1f1;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #999;
-        font-weight: 700;
-        font-size: 1.2rem;
-        overflow: hidden;
-    }
+    .product-image-placeholder { width: 100%; height: 140px; background: #f1f1f1; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; font-weight: 700; font-size: 1.2rem; overflow: hidden; }
     .product-image-placeholder img { width: 100%; height: 100%; object-fit: cover; }
 
     .product-info h3 { margin: 0 0 5px 0; font-size: 1rem; color: #333; }

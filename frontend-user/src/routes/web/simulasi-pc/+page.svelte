@@ -1,8 +1,9 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { fly, slide } from 'svelte/transition';
-    import { products } from '$lib/data/products';
     import { goto } from '$app/navigation';
-    import { cart } from '$lib/stores/cart'; 
+    import { cart } from '$lib/stores/cart';
+    import { PUBLIC_API_URL } from '$env/static/public';
 
     // --- Types ---
     type CategoryKey = 'processor' | 'motherboard' | 'cooler' | 'ram' | 'storage' | 'vga' | 'psu' | 'casing' | 'monitor';
@@ -14,7 +15,7 @@
         name: string;
         price: number;
         specs: string; 
-        imagePlaceholder: string; 
+        imagePlaceholder: string;
     }
 
     interface CategoryDef {
@@ -27,31 +28,79 @@
     }
 
     // --- State Management ---
-    let activeCategory: CategoryKey = 'processor'; 
+    let products: Product[] = []; // Changed: Dynamic Array
+    let isLoading = true;
+    
+    let activeCategory: CategoryKey = 'processor';
     let brandFilter: string = 'ALL'; 
     let sortOrder: 'price-asc' | 'price-desc' = 'price-asc'; 
     let searchQuery = '';
     let showSummary = false;
-    
-    // State penyimpanan komponen yang dipilih
+
     let selectionMap: Record<CategoryKey, Product | null> = {
         processor: null, motherboard: null, cooler: null, ram: null, storage: null, vga: null, psu: null, casing: null, monitor: null
     };
 
+    // --- API INTEGRATION ---
+    onMount(async () => {
+        await fetchAllProducts();
+    });
+
+    async function fetchAllProducts() {
+        try {
+            // Fetch plenty of items to populate the simulator
+            const res = await fetch(`${PUBLIC_API_URL}/product?per_page=100`);
+            if (res.ok) {
+                const data = await res.json();
+                const rawProducts = data.data || [];
+
+                // MAP API DATA TO SIMULATOR FORMAT
+                products = rawProducts.map((p: any) => {
+                    // Extract details safely
+                    const details = p.details || {};
+                    // Infer brand from title if not set (simple heuristic)
+                    let brand = 'Generic';
+                    const titleUpper = p.title.toUpperCase();
+                    if (titleUpper.includes('AMD')) brand = 'AMD';
+                    else if (titleUpper.includes('INTEL')) brand = 'INTEL';
+                    else if (titleUpper.includes('NVIDIA')) brand = 'NVIDIA';
+                    else if (titleUpper.includes('ASUS')) brand = 'ASUS';
+                    else if (titleUpper.includes('MSI')) brand = 'MSI';
+                    else if (titleUpper.includes('GIGABYTE')) brand = 'GIGABYTE';
+
+                    return {
+                        id: String(p.id),
+                        name: p.title,
+                        price: Number(p.price),
+                        category: details.category || 'unknown',
+                        specs: details.specs || '', // Crucial: This comes from your Dashboard logic
+                        brand: brand,
+                        imagePlaceholder: p.image_url || '/images/placeholder.png'
+                    };
+                });
+            }
+        } catch (e) {
+            console.error("Error loading simulation data:", e);
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // --- Hardware Definitions (Now uses reactive 'products' array) ---
     $: hardwareData = [
         {
             id: 'processor', group: 'Utama', label: 'Processor', subLabel: 'CPU untuk sistem', 
             iconPath: 'M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm3 5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm6-4a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0 4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z',
             options: products.filter(p => p.category === 'processor')
         },
-        { id: 'cooler', group: 'Utama', label: 'CPU Cooler (HSF)', subLabel: 'Pendingin processor', 
-          iconPath: 'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z M12 6a1 1 0 0 0-1 1v4H7a1 1 0 0 0 0 2h4v4a1 1 0 0 0 2 0v-4h4a1 1 0 0 0 0-2h-4V7a1 1 0 0 0-1-1z', 
-          options: products.filter(p => p.category === 'cooler') 
-        },
-        {
+        { 
             id: 'motherboard', group: 'Utama', label: 'Mainboard', subLabel: 'Motherboard', 
             iconPath: 'M20 6h-2.18c.11-.31.18-.65.18-1a3 3 0 0 0-3-3c-.35 0-.69.07-1 .18V2a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v.18c-.31-.11-.65-.18-1-.18a3 3 0 0 0-3 3c0 .35.07.69.18 1H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2.18c-.11.31-.18.65-.18 1a3 3 0 0 0 3 3c.35 0 .69-.07 1-.18V22a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-.18c.31.11.65.18 1 .18a3 3 0 0 0 3-3c0-.35-.07-.69-.18-1H22a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z',
             options: products.filter(p => p.category === 'motherboard')
+        },
+        { id: 'cooler', group: 'Utama', label: 'CPU Cooler', subLabel: 'Pendingin processor', 
+          iconPath: 'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z M12 6a1 1 0 0 0-1 1v4H7a1 1 0 0 0 0 2h4v4a1 1 0 0 0 2 0v-4h4a1 1 0 0 0 0-2h-4V7a1 1 0 0 0-1-1z', 
+          options: products.filter(p => p.category === 'cooler') 
         },
         { id: 'ram', group: 'Utama', label: 'RAM', subLabel: 'Memory komputer', 
           iconPath: 'M2 6h20v4H2z M4 6v4 M8 6v4 M12 6v4 M16 6v4 M20 6v4 M2 14h20v4H2z', 
@@ -86,56 +135,60 @@
 
     $: currentCategoryData = hardwareData.find(cat => cat.id === activeCategory);
 
-    // --- LOGIC DROP DOWN BRAND (Tetap memaksa AMD/INTEL muncul) ---
+    // --- LOGIC DROP DOWN BRAND ---
     $: availableBrands = (() => {
-        if (activeCategory === 'processor') {
-            return ['AMD', 'INTEL'];
-        }
         const extracted = (currentCategoryData?.options || [])
             .map(p => (p.brand || '').trim())
-            .filter(b => b.length > 0);
+            .filter(b => b.length > 0 && b !== 'Generic');
         return [...new Set(extracted)].sort();
     })();
 
-    // --- LOGIC FILTERING & SORTING (DIPERBAIKI AGAR LEBIH PINTAR) ---
+    // --- LOGIC FILTERING & SORTING (INTEGRATED COMPATIBILITY) ---
     $: filteredProducts = (currentCategoryData?.options || [])
         .filter(p => {
             // 1. Search Logic
             const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
             
-            // 2. Brand Logic (YANG DIPERBAIKI)
+            // 2. Brand Logic
             let matchBrand = true;
             if (brandFilter !== 'ALL') {
                 const targetBrand = brandFilter.toUpperCase().trim();
                 const productBrand = (p.brand || '').toUpperCase().trim();
                 const productName = (p.name || '').toUpperCase();
-
-                // Cek apakah field brand cocok ATAU nama produk mengandung merk tersebut
-                // Contoh: Meskipun brand kosong, jika nama produk "INTEL CORE I5", maka akan dianggap cocok.
                 const isBrandMatch = productBrand === targetBrand;
                 const isNameMatch = productName.includes(targetBrand);
-
                 matchBrand = isBrandMatch || isNameMatch;
             }
 
-            // 3. Socket Logic
-            let matchSocket = true;
+            // 3. Socket & Memory Compatibility Logic
+            let matchCompatibility = true;
+            
+            // A. Check Motherboard vs Processor (Socket)
             if (activeCategory === 'motherboard' && selectionMap.processor) {
-                const cpuSpecs = selectionMap.processor.specs || ''; 
-                const moboSpecs = p.specs || '';
-                if (cpuSpecs.includes('AM5') && !moboSpecs.includes('AM5')) matchSocket = false;
-                if (cpuSpecs.includes('LGA1700') && !moboSpecs.includes('LGA1700')) matchSocket = false;
+                const cpuSpecs = (selectionMap.processor.specs || '').toUpperCase();
+                const moboSpecs = (p.specs || '').toUpperCase();
+                
+                // If CPU is AM5, Mobo must be AM5
+                if (cpuSpecs.includes('AM5') && !moboSpecs.includes('AM5')) matchCompatibility = false;
+                // If CPU is LGA1700, Mobo must be LGA1700
+                if (cpuSpecs.includes('LGA1700') && !moboSpecs.includes('LGA1700')) matchCompatibility = false;
+                if (cpuSpecs.includes('AM4') && !moboSpecs.includes('AM4')) matchCompatibility = false;
             }
 
-            return matchSearch && matchBrand && matchSocket;
+            // B. Check RAM vs Motherboard (DDR Type)
+            if (activeCategory === 'ram' && selectionMap.motherboard) {
+                const moboSpecs = (selectionMap.motherboard.specs || '').toUpperCase();
+                const ramSpecs = (p.specs || '').toUpperCase();
+
+                if (moboSpecs.includes('DDR5') && !ramSpecs.includes('DDR5')) matchCompatibility = false;
+                if (moboSpecs.includes('DDR4') && !ramSpecs.includes('DDR4')) matchCompatibility = false;
+            }
+
+            return matchSearch && matchBrand && matchCompatibility;
         })
         .sort((a, b) => {
-            // 4. Sort Logic
-            if (sortOrder === 'price-asc') {
-                return a.price - b.price;
-            } else if (sortOrder === 'price-desc') {
-                return b.price - a.price;
-            }
+            if (sortOrder === 'price-asc') return a.price - b.price;
+            else if (sortOrder === 'price-desc') return b.price - a.price;
             return 0;
         });
 
@@ -143,7 +196,7 @@
     $: selectedItems = Object.entries(selectionMap)
         .filter(([_, item]) => item !== null)
         .map(([key, item]) => ({ key: key as CategoryKey, ...item! }));
-
+    
     $: totalItems = selectedItems.length;
     $: totalPrice = selectedItems.reduce((acc, item) => acc + item.price, 0);
 
@@ -156,9 +209,12 @@
 
     function selectProduct(item: Product) {
         if (selectionMap[activeCategory]?.id === item.id) {
-            selectionMap[activeCategory] = null; 
+            selectionMap[activeCategory] = null;
         } else {
-            selectionMap[activeCategory] = item; 
+            selectionMap[activeCategory] = item;
+            
+            // Auto-advance logic (Optional UX improvement)
+            // if (activeCategory === 'processor') changeCategory('motherboard');
         }
         selectionMap = selectionMap;
     }
@@ -211,16 +267,13 @@
                     });
                 }
             });
-
             savedNext = next;
             return next;
         });
-
+        
         try {
             localStorage.setItem('cart', JSON.stringify(savedNext));
-        } catch (e) {
-            // ignore storage errors
-        }
+        } catch (e) {}
 
         alert(`${totalItems} komponen berhasil ditambahkan ke keranjang!`);
     }
@@ -230,7 +283,6 @@
             alert('Silakan pilih komponen terlebih dahulu.');
             return;
         }
-        // Tambah ke cart dan pastikan disimpan sebelum navigasi
         handleAddToCart();
         goto('/web/co');
     }
@@ -350,42 +402,57 @@
                         ℹ️ Menampilkan motherboard yang kompatibel dengan <strong>{selectionMap.processor.name}</strong> ({selectionMap.processor.specs})
                     </div>
                 {/if}
+                {#if activeCategory === 'ram' && selectionMap.motherboard}
+                    <div class="compatibility-alert">
+                        ℹ️ Menampilkan RAM yang kompatibel dengan <strong>{selectionMap.motherboard.name}</strong> ({selectionMap.motherboard.specs})
+                    </div>
+                {/if}
 
                 <div class="product-list">
-                    {#each filteredProducts as product}
-                        <div
-                            class="product-card"
-                            class:selected={selectionMap[activeCategory]?.id === product.id}
-                            role="button"
-                            tabindex="0"
-                            on:click={() => openProduct(product)}
-                        >
-                            <div class="prod-img">📦</div>
-                            <div class="prod-info">
-                                <div class="prod-name">{product.name}</div>
-                                <div class="prod-specs">
-                                    <span class="brand-badge">{product.brand}</span>
-                                    <span>{product.specs}</span>
-                                </div>
-                            </div>
-                            <div class="prod-action">
-                                {#if selectionMap[activeCategory]?.id === product.id}
-                                    <button class="btn-select remove" on:click|stopPropagation={() => selectProduct(product)}>Remove</button>
-                                {:else}
-                                    <button class="btn-select" on:click|stopPropagation={() => selectProduct(product)}>Select</button>
-                                {/if}
-                                <div class="prod-price">{formatRupiah(product.price)}</div>
-                            </div>
-                        </div>
-                    {/each}
-
-                    {#if filteredProducts.length === 0}
+                    {#if isLoading}
+                        <div class="empty-state">Memuat data produk...</div>
+                    {:else if filteredProducts.length === 0}
                         <div class="empty-state">
                             <p>Tidak ada produk ditemukan.</p>
                             {#if activeCategory === 'motherboard' && selectionMap.processor}
                                 <small>Coba ganti Processor lain untuk melihat motherboard tipe berbeda.</small>
                             {/if}
                         </div>
+                    {:else}
+                        {#each filteredProducts as product}
+                            <div
+                                class="product-card"
+                                class:selected={selectionMap[activeCategory]?.id === product.id}
+                                role="button"
+                                tabindex="0"
+                                on:click={() => openProduct(product)}
+                            >
+                                <div class="prod-img">
+                                    {#if product.imagePlaceholder && product.imagePlaceholder !== '/images/placeholder.png'}
+                                        <img src={product.imagePlaceholder} alt="" style="width:50px; height:50px; object-fit:contain;">
+                                    {:else}
+                                        📦
+                                    {/if}
+                                </div>
+                                <div class="prod-info">
+                                    <div class="prod-name">{product.name}</div>
+                                    <div class="prod-specs">
+                                        {#if product.brand !== 'Generic'}
+                                            <span class="brand-badge">{product.brand}</span>
+                                        {/if}
+                                        <span>{product.specs}</span>
+                                    </div>
+                                </div>
+                                <div class="prod-action">
+                                    {#if selectionMap[activeCategory]?.id === product.id}
+                                        <button class="btn-select remove" on:click|stopPropagation={() => selectProduct(product)}>Remove</button>
+                                    {:else}
+                                        <button class="btn-select" on:click|stopPropagation={() => selectProduct(product)}>Select</button>
+                                    {/if}
+                                    <div class="prod-price">{formatRupiah(product.price)}</div>
+                                </div>
+                            </div>
+                        {/each}
                     {/if}
                 </div>
             </main>
@@ -395,7 +462,6 @@
 
 {#if totalItems > 0}
     <div class="floating-dock-container">
-        
         {#if showSummary}
             <div class="dock-backdrop" on:click={() => showSummary = false} transition:fly={{ duration: 200 }}></div>
         {/if}
@@ -442,10 +508,6 @@
                     {/if}
                 </button>
                 
-                <button class="btn-dock-secondary">
-                    ❤️ Wishlist
-                </button>
-
                 <button class="btn-dock-secondary" on:click={resetSelection}>
                     ↻ Reset
                 </button>
@@ -527,7 +589,7 @@
     .product-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08); }
     .product-card.selected { border-color: #ef4444; background: #fef2f2; }
     
-    .prod-img { font-size: 2.5rem; }
+    .prod-img { font-size: 2.5rem; display: flex; align-items: center; justify-content: center; width: 60px; }
     .prod-info { flex: 1; }
     
     .prod-name { font-weight: 700; font-size: 1.2rem; color: #1e293b; margin-bottom: 6px; }
