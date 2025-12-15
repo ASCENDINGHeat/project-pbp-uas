@@ -2,6 +2,7 @@
     import { goto } from '$app/navigation';
     import { createEventDispatcher, onMount } from 'svelte';
     import { PUBLIC_API_URL } from '$env/static/public';
+    import { user, clearUser } from '$lib/stores/user'; // Ambil data dari store
 
     const dispatch = createEventDispatcher();
 

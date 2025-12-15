@@ -130,7 +130,7 @@
                     </button>
                     <button class="nav-item logout" on:click={() => {
                         localStorage.removeItem('auth_token');
-                        goto('/login');
+                        goto('/web/login');
                     }}>
                         🚪 Logout
                     </button>
