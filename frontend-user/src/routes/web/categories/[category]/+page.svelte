@@ -2,6 +2,7 @@
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
     import { PUBLIC_API_URL } from '$env/static/public';
+    import ProductCard from '$lib/components/ProductCard.svelte';
 
     // --- LOGIC BARU: Mengambil Data dari API ---
     let categoryProducts: any[] = [];
@@ -163,31 +164,7 @@
                 </div>
             {:else if categoryProducts.length > 0}
                 {#each categoryProducts as product}
-                    <div class="prod-card" role="button" tabindex="0" on:click={() => openProduct(product.id)}>
-                        <div class="prod-thumb">
-                            <img src={product.image_url || product.image || '/images/placeholder.png'} alt={product.title} on:error={handleIconError} />
-                            <button class="wishlist-btn" on:click|stopPropagation={() => console.log('Wishlist clicked')}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                    <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="prod-body">
-                            <div class="prod-title">{product.title}</div>
-                            <div class="prod-rating">
-                                <span class="star">★</span> 
-                                <span class="score">4.8</span>
-                            </div>
-                            <div class="price">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(product.price)}</div>
-                        </div>
-
-                        <div class="prod-footer">
-                            <button class="btn-add-cart" on:click|stopPropagation={() => openProduct(product.id)}>
-                                Tambah ke Keranjang
-                            </button>
-                        </div>
-                    </div>
+                    <ProductCard {product} />
                 {/each}
             {:else}
                 <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px; color: #888;">

@@ -9,13 +9,16 @@
 
     export let product: {
         id: number;
-        name: string;
+        title: string;
         price: number;
         stock_quantity: number;
         image: string;
         rating?: number;
         is_wishlisted?: boolean;
+        name?: string;
     };
+
+    $: displayTitle = product.title || product.name || 'Untitled Product';
 
     let isLoading = false;
     let isWishlistLoading = false;
@@ -63,7 +66,7 @@
                 addToCart({
                     id: String(data.data?.id || Date.now()),
                     product_id: product.id,
-                    name: product.name,
+                    name: product.title,
                     price: product.price,
                     image: imageUrl,
                     quantity: 1,
@@ -98,7 +101,7 @@
         } else {
             addToWishlistStore({
                 id: product.id,
-                name: product.name,
+                name: product.title,
                 price: product.price,
                 image: imageUrl
             });
@@ -117,13 +120,13 @@
 
             if (!res.ok) {
                 // Rollback jika gagal
-                if (wasWishlisted) addToWishlistStore({ id: product.id, name: product.name, price: product.price, image: imageUrl });
+                if (wasWishlisted) addToWishlistStore({ id: product.id, name: product.title, price: product.price, image: imageUrl });
                 else removeFromWishlistStore(product.id);
                 console.error("Gagal update wishlist");
             }
         } catch (e) {
             // Rollback jika error koneksi
-            if (wasWishlisted) addToWishlistStore({ id: product.id, name: product.name, price: product.price, image: imageUrl });
+            if (wasWishlisted) addToWishlistStore({ id: product.id, name: product.title, price: product.price, image: imageUrl });
             else removeFromWishlistStore(product.id);
             console.error("Error Wishlist:", e);
         } finally {
@@ -143,8 +146,8 @@
 
 <div class="product-card">
     <div class="product-image-area">
-        <a href="/web/product/{product.id}" class="image-link" aria-label="Lihat detail {product.name}">
-            <img src={imageUrl} alt={product.name} on:error={handleImageError} />
+        <a href="/web/product/{product.id}" class="image-link" aria-label="Lihat detail {product.title}">
+            <img src={imageUrl} alt={product.title} on:error={handleImageError} />
             
             {#if product.stock_quantity <= 0}
                 <div class="out-of-stock">Habis Stok</div>
@@ -166,7 +169,7 @@
 
     <div class="product-info">
         <a href="/web/product/{product.id}" class="title-link">
-            <h3 class="product-name">{product.name}</h3>
+            <h3 class="product-name">{product.title}</h3>
         </a>
 
         <div class="product-rating">

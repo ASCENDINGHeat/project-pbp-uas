@@ -43,10 +43,7 @@ class ProductController extends Controller
         }
 
         if ($request->has('category') && $request->category !== 'all') {
-            // Using JSON arrow syntax (compatible with MySQL 5.7+ / PostgreSQL)
-            // ensuring case-insensitive comparison
-            $category = strtolower($request->category);
-            $query->whereRaw('LOWER(details->"$.category") = ?', [$category]);
+            $query->where('details->category', $request->category);
         }
 
         // D. Sort/Order (Complex Logic)
