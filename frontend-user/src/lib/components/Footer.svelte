@@ -16,9 +16,9 @@
 		<div class="footer-section">
 			<h3>Kategori</h3>
 			<ul>
-				<li><a href="/categories/processor">Processor</a></li>
-				<li><a href="/categories/vga">VGA</a></li>
-				<li><a href="/categories/ram">RAM</a></li>
+				<li><a href="/web/categories/processor">Processor</a></li>
+				<li><a href="/web/categories/vga">VGA</a></li>
+				<li><a href="/web/categories/ram">RAM</a></li>
 			</ul>
 		</div>
 
