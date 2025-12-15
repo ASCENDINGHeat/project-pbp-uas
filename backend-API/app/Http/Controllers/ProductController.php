@@ -83,16 +83,16 @@ class ProductController extends Controller
          */
     public function show($id)
     {
-    // Find product by product_id
-    $product = Product::with('vendor')->find($id);
+        // Find product by product_id
+        $product = Product::with('vendor')->find($id);
 
-    if (!$product) {
-        return response()->json([
-            'message' => 'Product not found'
-        ], 404);
-    }
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        }
 
-    return response()->json($product, 200);
+        return response()->json($product, 200);
     }
 
     public function store(Request $request)
