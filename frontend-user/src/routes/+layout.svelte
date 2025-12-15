@@ -2,28 +2,30 @@
 	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
-
-	$: showHeaderFooter = $page?.url?.pathname && $page.url.pathname !== '/';
 	import { onMount } from 'svelte';
     import { isLoggedIn } from '$lib/stores/auth';
-	import { user } from '$lib/stores/user';
-    import { cart } from '$lib/stores/cart'; // Store global
-    import { PUBLIC_API_URL,PUBLIC_STORAGE_URL } from '$env/static/public';
+    import { user } from '$lib/stores/user';
+    import { cart } from '$lib/stores/cart';
+    import { get } from 'svelte/store'; // [PENTING] Tambahkan import ini
+    import { PUBLIC_API_URL, PUBLIC_STORAGE_URL } from '$env/static/public';
 
-	async function initGlobalData() {
+	$: showHeaderFooter = $page?.url?.pathname && $page.url.pathname !== '/';
+
+    async function initGlobalData() {
         const token = localStorage.getItem('auth_token');
         if (!token) return;
 
-        // Kita bisa jalankan fetch User dan Cart secara paralel agar lebih cepat
-        // Promise.allSettled memastikan jika satu gagal, yang lain tetap jalan
         await Promise.allSettled([
             fetchUser(token),
             fetchCart(token)
         ]);
     }
+
 	async function fetchUser(token: string) {
-        // Jika data user sudah ada, skip fetch (optional)
-        // if ($user) return; 
+        // [SOLUSI UTAMA] Cek apakah data user sudah ada di store
+        // Jika data user sudah ada (misal dari localStorage), return saja.
+        // Ini mencegah fetch berulang-ulang setiap pindah halaman/refresh.
+        if (get(user)) return; 
 
         try {
             const res = await fetch(`${PUBLIC_API_URL}/user`, {
@@ -39,18 +41,19 @@
                 
                 // Handle URL Avatar
                 if (userData.avatar && !userData.avatar.startsWith('http')) {
-                    const baseUrl = PUBLIC_STORAGE_URL.endsWith('/') ? PUBLIC_STORAGE_URL : `${PUBLIC_STORAGE_URL}/`;
+                    const baseUrl = PUBLIC_STORAGE_URL.endsWith('/') ?
+                        PUBLIC_STORAGE_URL : `${PUBLIC_STORAGE_URL}/`;
                     userData.avatar = `${baseUrl}storage/${userData.avatar}`;
                 }
 
-                // SIMPAN KE STORE
+                // SIMPAN KE STORE 
+                // (Ini akan otomatis men-trigger subscription di user.ts untuk update localStorage)
                 user.set({
                     id: userData.id,
                     name: userData.name,
                     email: userData.email,
                     avatar: userData.avatar,
                     phone: userData.phone,
-                    // Pastikan dikonversi jadi boolean jika DB mengembalikan 0/1
                     is_vendor: Boolean(userData.is_vendor) 
                 });
             }
@@ -58,6 +61,7 @@
             console.error("Gagal load user:", e);
         }
     }
+
     onMount(async () => {
         // Cek jika user login, langsung tarik data keranjang untuk inisialisasi
         if ($isLoggedIn) {
@@ -65,28 +69,24 @@
         }
     });
 
+    // ... sisa kode fetchCart dan lainnya tetap sama ...
     async function fetchCart(token: string) {
         try {
-            const token = localStorage.getItem('auth_token');
-            if(!token) return;
-
+            // Note: Cart sebaiknya tetap di-fetch agar stok/harga selalu update
             const res = await fetch(`${PUBLIC_API_URL}/cart`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             if (res.ok) {
                 const data = await res.json();
-                // Mapping data sesuai struktur store
-                const mappedData = data.data.map(item => ({
+                const mappedData = data.data.map((item: any) => ({
                     id: item.product_id,
                     name: item.product.name,
                     price: item.product.price,
-                    image: item.product.image, // Ingat handle URL gambar disini
+                    image: item.product.image,
                     quantity: item.quantity,
                     stock: item.product.stock
                 }));
-                
-                // Isi store cart di awal!
                 cart.set(mappedData);
             }
         } catch (e) {
@@ -96,7 +96,6 @@
 </script>
 
 {#if showHeaderFooter}
-    <!-- keep Header; it has its own white drawer -->
     <Header />
 {/if}
 
@@ -109,6 +108,7 @@
 {/if}
 
 <style>
+    /* Style tetap sama persis seperti sebelumnya */
 	:global(*) {
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 	}
@@ -117,17 +117,12 @@
 		margin: 0;
 		padding: 0;
 		width: 100%;
-
 		min-height: 100vh;
-
 		overflow-y: auto !important;
 		overflow-x: hidden;
-
 		font-family: 'Segoe UI', sans-serif;
 		background-color: #ffffff;
-
 		scroll-behavior: smooth;
-
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
 	}
