@@ -98,8 +98,4 @@ class User extends Authenticatable
     {
         return $this->hasMany(Cart::class);
     }
-    public function parentOrders()
-    {
-        return $this->hasMany(ParentOrder::class);
-    }
 }
