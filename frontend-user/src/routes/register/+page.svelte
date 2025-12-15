@@ -1,28 +1,72 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { onMount, onDestroy } from 'svelte';
-
+    import { PUBLIC_API_URL } from '$env/static/public';
     // Variabel input
     let name = "";
     let email = "";
     let password = "";
     let confirmPassword = "";
-
+    let phoneNumber = "";
+    let address = "";
+    let isLoading = false;
+    const API_URL = `${PUBLIC_API_URL}/register`;
     // Fungsi Register Sederhana
-    function handleRegister() {
-        if (!name || !email || !password || !confirmPassword) {
+    async function handleRegister() {
+        if (!name || !email || !password || !confirmPassword || !phoneNumber || !address) {
             alert("Harap isi semua kolom!");
             return;
         }
+        
 
         if (password !== confirmPassword) {
             alert("Password dan Konfirmasi Password tidak cocok!");
             return;
         }
+        isLoading = true;
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    password: password,
+                    password_confirmation: confirmPassword ,
+                    phone_number: phoneNumber,
+                    address: address
+                })
+            });
 
-        // Simulasi sukses daftar
-        alert("Pendaftaran Berhasil! Silakan Login.");
-        goto('/login'); // Arahkan ke halaman login
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Handle Error Validasi dari Laravel
+                if (data.errors) {
+                    // Gabungkan semua pesan error jadi satu string
+                    const errorMessages = Object.values(data.errors).flat().join('\n');
+                    throw new Error(errorMessages);
+                }
+                throw new Error(data.message || 'Gagal mendaftar');
+            }else{
+                localStorage.setItem('auth_token', data.access_token);
+				localStorage.setItem('user_data', JSON.stringify(data.user));
+                goto('/web');
+
+            }
+        } catch (error) {
+            if (error instanceof Error) {
+                alert(error.message);
+            } else {
+                // Jika error bukan object Error (misal string atau object lain)
+                alert('Terjadi kesalahan yang tidak diketahui.');
+            }        
+        } finally {
+            isLoading = false;
+        }
     }
 
     // --- Prevent background scroll while modal is open ---
@@ -52,6 +96,15 @@
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" bind:value={email} placeholder="your@email.com" required />
+                </div>
+                <div class="form-group">
+                    <label for="phone">Nomor HP</label>
+                    <input type="text" id="phone" bind:value={phoneNumber} placeholder="Contoh: 081234567890" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Alamat Lengkap</label>
+                    <input type="text" id="address" bind:value={address} placeholder="Masukkan alamat lengkap" required />
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>

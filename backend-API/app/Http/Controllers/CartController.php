@@ -92,7 +92,7 @@ class CartController extends Controller
 
         // Jika quantity > 0, Lanjut Update seperti biasa
         // Cek Stok dulu
-        if ($cartItem->product->stock < $request->quantity) {
+        if ($cartItem->product->stock_quantity < $request->quantity) {
             return response()->json([
                 'message' => 'Stok tidak mencukupi. Sisa: ' . $cartItem->product->stock
             ], 400);

@@ -32,7 +32,7 @@ export const pcReadyProducts: Product[] = [
 		]
 	},
 	{
-		id: 'pc-ready-002',
+		id: '3',
 		category: 'pc-ready',
 		name: 'PC Ready Stealth G5',
 		brand: 'Stealth',

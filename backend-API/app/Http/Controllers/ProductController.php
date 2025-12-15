@@ -42,6 +42,10 @@ class ProductController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
 
+        if ($request->has('category') && $request->category !== 'all') {
+            $query->where('details->category', $request->category);
+        }
+
         // D. Sort/Order (Complex Logic)
         $sortBy = $request->input('sort_by', 'price'); // price, title, created_at, stock_quantity
         $sortDirection = $request->input('sort', 'asc') === 'desc' ? 'desc' : 'asc';
@@ -76,16 +80,16 @@ class ProductController extends Controller
          */
     public function show($id)
     {
-    // Find product by product_id
-    $product = Product::find($id);
+        // Find product by product_id
+        $product = Product::with('vendor')->find($id);
 
-    if (!$product) {
-        return response()->json([
-            'message' => 'Product not found'
-        ], 404);
-    }
+        if (!$product) {
+            return response()->json([
+                'message' => 'Product not found'
+            ], 404);
+        }
 
-    return response()->json($product, 200);
+        return response()->json($product, 200);
     }
 
     public function store(Request $request)

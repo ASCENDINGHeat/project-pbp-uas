@@ -33,7 +33,7 @@ class Product extends Model
         'stock_quantity' => 'integer',
     ];
 
-    protected $appends = ['image_url']; // Append these to the JSON output automatically
+    protected $appends = ['image_url', 'category']; // Append these to the JSON output automatically
 
     // Accessor for Main Image URL
     public function getImageUrlAttribute()
@@ -57,11 +57,10 @@ class Product extends Model
         return $urls;
     }
 
-    public function orderItems()
-    {
-        return $this->hasMany(OrderItem::class, 'product_id', 'id');
+    public function getCategoryAttribute(){
+        return $this->details['category'] ?? null;
     }
-
+    
     public function Vendor(){
         return $this->belongsTo(Vendor::class);
     }

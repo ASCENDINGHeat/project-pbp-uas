@@ -2,15 +2,15 @@
 	import { goto } from '$app/navigation';
 
 	const categories = [
-		{ label: 'ALL CATEGORIES', path: '/categories/all', large: true },
-		{ label: 'PROCESSOR', path: '/categories/processor' },
-		{ label: 'MOTHERBOARD', path: '/categories/motherboard' },
-		{ label: 'VGA', path: '/categories/vga' },
-		{ label: 'STORAGE', path: '/categories/storage' },
-		{ label: 'RAM', path: '/categories/ram' },
-		{ label: 'CASING', path: '/categories/casing' },
-		{ label: 'PSU', path: '/categories/psu' },
-		{ label: 'MONITOR', path: '/categories/monitor' }
+		{ label: 'ALL CATEGORIES', path: '/web/categories/all', large: true },
+		{ label: 'PROCESSOR', path: '/web/categories/processor' },
+		{ label: 'MOTHERBOARD', path: '/web/categories/motherboard' },
+		{ label: 'VGA', path: '/web/categories/vga' },
+		{ label: 'STORAGE', path: '/web/categories/storage' },
+		{ label: 'RAM', path: '/web/categories/ram' },
+		{ label: 'CASING', path: '/web/categories/casing' },
+		{ label: 'PSU', path: '/web/categories/psu' },
+		{ label: 'MONITOR', path: '/web/categories/monitor' }
 	];
 
 	function handleClick(path: string) {

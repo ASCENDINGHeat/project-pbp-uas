@@ -74,4 +74,25 @@ class WishListController extends Controller
 
         return back()->with('success', 'Barang dipindahkan ke keranjang!');
     }
+    public function destroy($productId)
+    {
+        $userId = Auth::id();
+
+        // Cari item di wishlist user
+        $wishlist = WishList::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->first();
+
+        if ($wishlist) {
+            $wishlist->delete();
+            return response()->json([
+                'status' => 'removed',
+                'message' => 'Produk berhasil dihapus dari wishlist'
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => 'Produk tidak ditemukan di wishlist'
+        ], 404);
+    }
 }
