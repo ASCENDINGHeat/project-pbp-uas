@@ -2,6 +2,7 @@
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
     import { fly, fade } from 'svelte/transition';
+    import heroImage from './assets gambar/halaman utama.jpg';
 
     let ready = false;
     onMount(() => ready = true);
@@ -91,7 +92,7 @@
                 <div class="glow-effect" in:fade={{ duration: 1500 }}></div>
 
                 <div class="img-wrapper" in:fly={{ x: 50, duration: 1000, delay: 300 }}>
-                    <img src="src/routes/assets gambar/halaman utama.jpg" alt="Gaming Setup" class="hero-img" />
+                    <img src={heroImage} alt="Gaming Setup" class="hero-img" />
                     
                     <div class="glass-card">
                         <span class="check-icon">✓</span>
