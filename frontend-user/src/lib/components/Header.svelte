@@ -2,84 +2,89 @@
 	import { page } from '$app/stores';
 	import BrandButton from './BrandButton.svelte';
 	import UserMenu from './UserMenu.svelte';
+	// 1. Pastikan Component CartDrawer diimport
+	import CartDrawer from './CartDrawer.svelte'; 
 	import { goto } from '$app/navigation';
 	import { cart, removeFromCart, clearCart } from '$lib/stores/cart';
+	import { wishlist } from '$lib/stores/wishlist';
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher();
 
-	// --- NEW: Search State ---
+	// --- Search State ---
 	let searchTerm = '';
-
 	function handleSearch() {
 		if (searchTerm.trim()) {
-			// Redirect to "All Categories" with the search query
 			goto(`/web/categories/all?search=${encodeURIComponent(searchTerm)}`);
-			// Optional: Clear search term after navigation or keep it
-			// searchTerm = ''; 
 		}
 	}
 
 	function handleSearchKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			handleSearch();
-		}
+		if (e.key === 'Enter') handleSearch();
 	}
-	// --- END NEW ---
 
-	// cart menu
+	// --- Menu States ---
 	let cartOpen: boolean = false;
-	let cartEl: HTMLElement | null = null;
-	let cartBtnEl: HTMLElement | null = null;
-
 	let wishlistOpen: boolean = false;
+	let showUserDropdown: boolean = false;
+
+	// Elements for click-outside detection
+	let cartBtnEl: HTMLElement | null = null;
 	let wishlistEl: HTMLElement | null = null;
 	let wishlistBtnEl: HTMLElement | null = null;
 
-	// User Menu State
-	let showUserDropdown: boolean = false;
-
+	// --- Handlers ---
 	function toggleCart(): void {
 		cartOpen = !cartOpen;
-		if (cartOpen) { wishlistOpen = false; showUserDropdown = false; }
+		if (cartOpen) { 
+			wishlistOpen = false;
+			showUserDropdown = false; 
+		}
 		dispatch('cartClick');
 	}
 
-	function closeCart(): void { cartOpen = false; }
+	function closeCart(): void { 
+		cartOpen = false; 
+	}
 	
 	function toggleWishlist(): void {
 		wishlistOpen = !wishlistOpen;
-		if (wishlistOpen) { cartOpen = false; showUserDropdown = false; }
+		if (wishlistOpen) { 
+			cartOpen = false; 
+			showUserDropdown = false; 
+		}
 	}
 	
-	function closeWishlist(): void { wishlistOpen = false; }
+	function closeWishlist(): void { 
+		wishlistOpen = false;
+	}
 
 	function toggleUserMenu(): void {
 		showUserDropdown = !showUserDropdown;
-		if (showUserDropdown) { cartOpen = false; wishlistOpen = false; }
+		if (showUserDropdown) { 
+			cartOpen = false; 
+			wishlistOpen = false;
+		}
 	}
 
+	// Click Outside Handler
 	function onWindowClick(e: Event): void {
 		const target = (e as MouseEvent).target as Node | null;
-		if (cartOpen && target && cartEl && cartBtnEl && !cartEl.contains(target) && !cartBtnEl.contains(target)) {
-			cartOpen = false;
-		}
+		
+		// Note: CartDrawer sudah punya logic tutup sendiri (backdrop), 
+		// jadi kita hanya cek wishlist dan user menu di sini.
+		
 		if (wishlistOpen && target && wishlistEl && wishlistBtnEl && !wishlistEl.contains(target) && !wishlistBtnEl.contains(target)) {
 			wishlistOpen = false;
 		}
+		
 		const userMenuArea = document.querySelector('.user-menu-area');
 		if (showUserDropdown && target && userMenuArea && !userMenuArea.contains(target)) {
 			showUserDropdown = false;
 		}
 	}
 
-	$: if (cartOpen) setTimeout(() => cartEl?.focus(), 0);
 	$: if (wishlistOpen) setTimeout(() => wishlistEl?.focus(), 0);
-
-	function handleMenuClick(path: string) {
-		closeMenu();
-		goto(path.startsWith('/web') ? path : `/web${path}`);
-	}
 
 	function handleCategoryClick(path: string) {
 		goto(path.startsWith('/web') ? path : `/web${path}`);
@@ -90,37 +95,16 @@
 		goto(path.startsWith('/web') ? path : `/web${path}`);
 	}
 
-	function handleSettingsClick() {
-		closeMenu();
-		const isLoggedIn = localStorage.getItem("userLoggedIn");
-		if (isLoggedIn) {
-			goto('/web/pengaturan');
-		} else {
-			goto('/web/login');
-		}
-	}
-
-	function closeMenu(): void {
-		showUserDropdown = false;
-	}
-
 	function onKeyDown(e: KeyboardEvent): void {
 		if (e.key === 'Escape') {
 			showUserDropdown = false;
+			cartOpen = false;
+			wishlistOpen = false;
 		}
 	}
-
-	$: subtotal = $cart.reduce((sum, it) => sum + (Number(it.price ?? 0) * (it.quantity ?? 1)), 0);
-	const formatCurrency = (val: number) =>
-		new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
-
-	function removeItem(id: string) {
-		removeFromCart(id);
-	}
-	function clearAllCart() {
-		if (confirm('Kosongkan seluruh keranjang?')) clearCart();
-	}
 </script>
+
+<CartDrawer isOpen={cartOpen} on:close={closeCart} />
 
 <header class="site-header">
 	<div class="site-top">
@@ -152,6 +136,7 @@
 					</svg>
 				</button>
 			</div>
+
 			<div class="cart-wrapper">
 				<button
 					class="cart-btn"
@@ -159,7 +144,6 @@
 					bind:this={cartBtnEl}
 					aria-haspopup="true"
 					aria-expanded={cartOpen}
-					aria-controls="cart-menu"
 					aria-label="Keranjang"
 				>
 					<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -169,63 +153,8 @@
 					</svg>
 					<span class="cart-count">{$cart.length}</span>
 				</button>
-
-				{#if cartOpen}
-					<aside
-						class="cart-menu menu cart-drawer"
-						bind:this={cartEl}
-						id="cart-menu"
-						role="dialog"
-						aria-labelledby="cart-title"
-						aria-label="Cart drawer"
-						tabindex="-1"
-						on:click|stopPropagation
-					>
-						<header class="cart-header">
-							<h2 id="cart-title">Keranjang Belanja</h2>
-							<button class="cart-close" on:click={closeCart} aria-label="Tutup keranjang">✕</button>
-						</header>
-
-						<section class="cart-body">
-							{#if $cart.length === 0}
-								<div class="cart-empty-illustration" aria-hidden="true">
-									<svg viewBox="0 0 64 64" width="88" height="88" fill="none" stroke="#9aa0a6" stroke-width="1.5">
-										<circle cx="32" cy="32" r="28" fill="#f4f5f6"></circle>
-										<path d="M22 28h20l-3.5 12H25.5L22 28z" fill="none" stroke="#9aa0a6"></path>
-									</svg>
-								</div>
-								<p class="cart-empty-title">Keranjang belanja Anda masih kosong</p>
-								<a href="/web" class="btn btn-primary btn-wide" on:click={closeCart}>Lanjutkan Belanja</a>
-							{:else}
-								<div class="cart-items">
-									{#each $cart as item}
-										<div class="cart-item">
-											<div class="item-info">
-												<p class="item-name">{item.name}</p>
-												<p class="item-price">{item.quantity} x {formatCurrency(Number(item.price ?? 0))}</p>
-											</div>
-											<button class="cart-close" aria-label="Hapus" on:click={() => removeItem(item.id)}>✕</button>
-										</div>
-									{/each}
-								</div>
-								<div style="padding:12px 24px; text-align:right; color:#475569;">Subtotal: <strong>{formatCurrency(subtotal)}</strong></div>
-							{/if}
-						</section>
-
-						<footer class="cart-footer">
-							<div class="cart-subtotal">
-								<span>Subtotal:</span>
-								<strong>{formatCurrency(subtotal)}</strong>
-							</div>
-
-							<div class="cart-actions">
-								<a href="/web/cart" class="btn btn-outline" on:click={closeCart}>Lihat Keranjang</a>
-								<a href="/web/checkout" class="btn btn-dark" on:click={closeCart}>Checkout</a>
-							</div>
-						</footer>
-					</aside>
-				{/if}
-			</div>
+				
+				</div>
 
 			<div class="wishlist-wrapper">
 				<button
@@ -302,10 +231,7 @@
 <svelte:window on:click={onWindowClick} on:keydown={onKeyDown} />
 
 <style>
-/* ... all existing styles ... */
-	:root {
-		--category-bar-height: 56px;
-	}
+	:root { --category-bar-height: 56px; }
 
 	.brand-category-bar {
 		min-height: var(--category-bar-height);
@@ -359,7 +285,7 @@
 	}
 
 	.cart-btn,
-	.profile-btn,
+	.wishlist-btn,
 	.icon-btn {
 		width: calc(var(--category-bar-height) - 12px);
 		height: calc(var(--category-bar-height) - 12px);
@@ -371,10 +297,7 @@
 		border-radius: 999px;
 	}
 
-	.cart-count {
-		top: -6px;
-		right: -6px;
-	}
+	.cart-count { top: -6px; right: -6px; }
 
 	@media (max-width: 900px) {
 		:root { --category-bar-height: 48px; }
@@ -431,58 +354,13 @@
 		transition: opacity 0.2s;
 	}
 
-	.logo:hover {
-		opacity: 0.8;
-	}
+	.logo:hover { opacity: 0.8; }
 
 	.brand-action-row {
 		display: flex;
 		align-items: center;
 		gap: 10px;
 		margin-left: 8px;
-	}
-
-	.brand-action {
-		background: linear-gradient(90deg,#ff5f8a,#8a4bff, #ff5f8a 80%);
-		background-size: 200% 200%;
-		background-position: 0% 50%;
-		color: #fff;
-		border: 2px solid rgba(255,255,255,0.12);
-		padding: 10px 20px;
-		border-radius: 12px;
-		font-weight: 900;
-		font-size: 1.05rem;
-		box-shadow: 0 10px 24px rgba(11,9,38,0.22);
-		cursor: pointer;
-		animation: blink-border 1.6s linear infinite;
-	}
-
-	.brand-tag {
-		background: linear-gradient(90deg,#ff5f8a,#8a4bff, #ff5f8a 80%);
-		background-size: 200% 200%;
-		background-position: 0% 50%;
-		color: #fff;
-		font-weight: 900;
-		padding: 10px 20px;
-		border-radius: 12px;
-		font-size: 1.05rem;
-		border: 2px solid rgba(255,255,255,0.12);
-		box-shadow: 0 10px 24px rgba(11,9,38,0.22);
-		margin-left: 0;
-		animation: blink-border 1.6s linear infinite, blink-bg 2.2s linear infinite;
-	}
-
-	@keyframes blink-border {
-		0%   { box-shadow: 0 0 0 0 rgba(138,75,255,0); border-color: rgba(255,255,255,0.12); }
-		30%  { box-shadow: 0 0 12px 6px rgba(138,75,255,0.18); border-color: rgba(255,255,255,0.28); }
-		60%  { box-shadow: 0 0 6px 3px rgba(138,75,255,0.10); border-color: rgba(255,255,255,0.12); }
-		100% { box-shadow: 0 0 0 0 rgba(138,75,255,0); border-color: rgba(255,255,255,0.12); }
-	}
-
-	@keyframes blink-bg {
-		0%   { background-position: 0% 50%; }
-		50%  { background-position: 100% 50%; }
-		100% { background-position: 0% 50%; }
 	}
 
 	.brand-category-bar {
@@ -502,13 +380,7 @@
 	.categories { display: flex; gap: 10px; width: 100%; }
 	.cat-pill { color: #fff; font-weight: 900; padding: 12px 18px; border-radius: 999px; background: rgba(255,255,255,0.10); font-size: 1.12rem; white-space: nowrap; }
 
-	.cat-pill,
-	.cat-pill:link,
-	.cat-pill:visited,
-	.cat-pill:hover,
-	.cat-pill:focus {
-		text-decoration: none;
-	}
+	.cat-pill, .cat-pill:link, .cat-pill:visited, .cat-pill:hover, .cat-pill:focus { text-decoration: none; }
 	
 	.top-right { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; margin-left: 0; }
 	.search-input { background: transparent; border: 2px solid #fff; color: #fff; width: 420px; outline: none; font-size: 1.18rem; padding: 6px 12px; border-radius: 15px; transition: border-color 0.2s; }
@@ -519,31 +391,9 @@
 	.cart-btn { width: 64px; height: 64px; border-radius: 100%; background: linear-gradient(135deg,#7B4BFF,#4BB1FF); border: 2px solid rgba(255,255,255,0.12); color: white; display: inline-flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
 	.cart-count { position: absolute; right: -6px; top: -6px; background: #ff3b30; color: white; font-weight: 700; font-size: 0.7rem; padding: 2px 6px; border-radius: 999px; border: 2px solid #0f0d28; }
 
-	.profile { position: relative; margin-left: 16px; }
-	.profile-btn { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg,#FF5A5A,#D32F2F); display: inline-flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.12); color: white; cursor: pointer; box-shadow: 0 4px 10px rgba(11,9,38,0.45); }
-	.profile-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 180px; background: #0f0d28; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.45); padding: 8px; overflow: hidden; z-index: 30; }
-
-	.cart-drawer { position: fixed; right: 0; top: 0; height: 100vh; width: min(420px, 94%); background: #ffffff; color: #222; box-shadow: -20px 0 40px rgba(11,9,38,0.25); z-index: 1000; display: flex; flex-direction: column; padding: 0; }
-	.cart-header { display: flex; align-items: center; justify-content: space-between; padding: 22px 20px; border-bottom: 1px solid rgba(0,0,0,0.06); }
-	.cart-header h2 { margin: 0; font-size: 1.25rem; color: #1f2d3d; font-weight: 700; }
-	.cart-close { background: transparent; border: none; font-size: 1.15rem; color: #7b8794; cursor: pointer; padding: 6px; }
-	.cart-body { padding: 36px 24px; text-align: center; flex: 1 1 auto; }
-	.cart-empty-illustration { margin-bottom: 18px; display: flex; justify-content: center; }
-	.cart-empty-title { color: #334155; margin: 10px 0 18px; }
-	.btn { display: inline-block; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; }
-	.btn-wide { width: 80%; max-width: 320px; }
-	.btn-primary { background: #d32f2f; color: #fff; }
-	.btn-outline { background: transparent; border: 1px solid #e0e6ea; color: #1f2d3d; padding: 10px 16px; border-radius: 8px; }
-	.btn-dark { background: #2f3a46; color: #fff; padding: 10px 16px; border-radius: 8px; margin-left: 8px; }
-	.cart-footer { padding: 14px 18px; border-top: 1px solid rgba(0,0,0,0.06); background: #fff; }
-	.cart-subtotal { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; color: #475569; }
-	.cart-actions { display: flex; justify-content: space-between; gap: 8px; }
-	.cart-drawer:focus { outline: none; }
-
 	.menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: #EDE7FF; text-decoration: none; border-radius: 8px; transition: background 0.12s ease; }
 	.menu-item svg { opacity: 0.9; }
 	.menu-item:hover { background: rgba(255,255,255,0.03); }
-	.menu-item.muted { opacity: 0.8; font-size: 0.95rem; }
 
 	.search-btn { background: transparent; border: none; padding: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 	.mobile-menu-btn { display: none; background: transparent; border: none; color: white; cursor: pointer; padding: 8px; }
@@ -575,44 +425,6 @@
 		.logo { font-size: 1.4rem; }
 		.brand-top-row { gap: 8px; }
 		.brand-action-row { gap: 6px; }
-		.nav-item span { font-size: 0.65rem; }
-		.nav-item svg { width: 22px; height: 22px; }
-	}
-
-	.cart-items {
-		max-height: 400px;
-		overflow-y: auto;
-		padding: 12px;
-	}
-
-	.cart-item {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 12px;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-	}
-
-	.item-info {
-		flex: 1;
-	}
-
-	.item-name {
-		margin: 0;
-		font-weight: 600;
-		color: #1f2d3d;
-		font-size: 0.95rem;
-	}
-
-	.item-price {
-		margin: 4px 0 0;
-		color: #666;
-		font-size: 0.85rem;
-	}
-
-	.item-quantity {
-		color: #8E42E1;
-		font-weight: 600;
 	}
 
 	.search-wrap { position: relative; }

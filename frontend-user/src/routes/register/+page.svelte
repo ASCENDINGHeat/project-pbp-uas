@@ -7,11 +7,13 @@
     let email = "";
     let password = "";
     let confirmPassword = "";
+    let phoneNumber = "";
+    let address = "";
     let isLoading = false;
     const API_URL = `${PUBLIC_API_URL}/register`;
     // Fungsi Register Sederhana
     async function handleRegister() {
-        if (!name || !email || !password || !confirmPassword) {
+        if (!name || !email || !password || !confirmPassword || !phoneNumber || !address) {
             alert("Harap isi semua kolom!");
             return;
         }
@@ -33,7 +35,9 @@
                     name: name,
                     email: email,
                     password: password,
-                    password_confirmation: confirmPassword // Wajib dikirim untuk validasi 'confirmed' Laravel
+                    password_confirmation: confirmPassword ,
+                    phone_number: phoneNumber,
+                    address: address
                 })
             });
 
@@ -92,6 +96,15 @@
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" bind:value={email} placeholder="your@email.com" required />
+                </div>
+                <div class="form-group">
+                    <label for="phone">Nomor HP</label>
+                    <input type="text" id="phone" bind:value={phoneNumber} placeholder="Contoh: 081234567890" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Alamat Lengkap</label>
+                    <input type="text" id="address" bind:value={address} placeholder="Masukkan alamat lengkap" required />
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
