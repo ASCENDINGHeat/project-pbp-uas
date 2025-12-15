@@ -30,6 +30,6 @@ class ParentOrder extends Model
      */
     public function vendorOrders(): HasMany
     {
-        return $this->hasMany(vendorOrder::class, 'parent_order_id');
+        return $this->hasMany(VendorOrder::class, 'parent_order_id');
     }
 }

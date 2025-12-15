@@ -1,8 +1,6 @@
 <script lang="ts">
     import { page } from '$app/stores';
     import { goto } from '$app/navigation';
-    // Remove static data import
-    // import { getProductsByCategory } from '$lib/data/products';
     import { PUBLIC_API_URL } from '$env/static/public';
 
     // --- LOGIC BARU: Mengambil Data dari API ---
@@ -63,7 +61,7 @@
         monitor: 'Monitor',
         cooler: 'CPU Cooler (HSF)'
     };
-    $: categoryName = categoryNames[category] || 'Kategori';
+    $: categoryName = categoryNames[category] || labelize(category);
 
     // Update title dynamic if searching
     $: displayTitle = search ? `Hasil Pencarian: "${search}"` : categoryName;
