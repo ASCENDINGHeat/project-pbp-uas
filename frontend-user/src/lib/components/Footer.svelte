@@ -25,8 +25,8 @@
 		<div class="footer-section">
 			<h3>Layanan</h3>
 			<ul>
-				<li><a href="#contact">Hubungi Kami</a></li>
-				<li><a href="#faq">FAQ</a></li>
+				<li>Hubungi Kami</li>
+				<li>FAQ</li>
 			</ul>
 		</div>
 	</div>
