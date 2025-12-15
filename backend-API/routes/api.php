@@ -23,7 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cart/{id}', [CartController::class, 'addToCart']);
     Route::get('/cart', [CartController::class, 'index']);
     Route::put('/cart/update/{id}', [CartController::class, 'update']);
-    Route::delete('cart/delete/{id}', [CartController::class, 'destroy']);
+    Route::delete('/cart/delete/{id}', [CartController::class, 'destroy']);
     Route::post('/wishlist/{id}', [WishListController::class, 'toggle']);
     Route::get('/wishlist', [WishListController::class, 'view']);
     Route::delete('/wishlist/{id}', [WishListController::class, 'destroy']);

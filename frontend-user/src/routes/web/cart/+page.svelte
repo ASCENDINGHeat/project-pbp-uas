@@ -30,17 +30,14 @@
         try {
             const token = localStorage.getItem('auth_token');
             const res = await fetch(`${PUBLIC_API_URL}/cart`, {
-                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+                 headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
             });
             if (res.ok) {
                 const data = await res.json();
-                // Mapping data Backend -> Frontend
+                // Mapping ID Cart ke store
                 cart.set(data.data.map((item: any) => ({
-                    id: item.id,                 // ID Cart (PENTING: Ini yang dikirim ke backend)
-                    product_id: item.product_id, // ID Produk
+                    id: String(item.id), // Pastikan string
+                    product_id: item.product_id,
                     name: item.product.title,
                     price: Number(item.product.price),
                     image: item.product.image_url,
