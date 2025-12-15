@@ -4,14 +4,18 @@
 	export let ariaLabel: string = '';
 	export let className: string = '';
 	// No onClick prop, use event forwarding
+
+	let element: HTMLButtonElement;
 </script>
 
 {#if as === 'button'}
 	<button
+		bind:this={element}
 		type={type}
 		class="brand-action blink-border blink-bg {className}"
 		aria-label={ariaLabel}
 		{...$$restProps}
+		on:click
 	>
 		<slot />
 	</button>
@@ -40,6 +44,20 @@
 		box-shadow: 0 10px 24px rgba(11,9,38,0.22);
 		cursor: pointer;
 		animation: blink-border 1.6s linear infinite;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+		border: none;
+		font-family: inherit;
+	}
+	.brand-action:hover {
+		transform: scale(1.05);
+		box-shadow: 0 12px 28px rgba(11,9,38,0.35);
+	}
+	.brand-action:active {
+		transform: scale(0.98);
 	}
 	.blink-border {
 		animation: blink-border 1.6s linear infinite;
@@ -48,10 +66,10 @@
 		animation: blink-bg 2.2s linear infinite;
 	}
 	@keyframes blink-border {
-		0%   { box-shadow: 0 0 0 0 rgba(138,75,255,0); border-color: rgba(255,255,255,0.12);}
-		30%  { box-shadow: 0 0 12px 6px rgba(138,75,255,0.18); border-color: rgba(255,255,255,0.28);}
-		60%  { box-shadow: 0 0 6px 3px rgba(138,75,255,0.10); border-color: rgba(255,255,255,0.12);}
-		100% { box-shadow: 0 0 0 0 rgba(138,75,255,0); border-color: rgba(255,255,255,0.12);}
+		0%   { box-shadow: 0 0 0 0 rgba(138,75,255,0), 0 10px 24px rgba(11,9,38,0.22); border-color: rgba(255,255,255,0.12);}
+		30%  { box-shadow: 0 0 12px 6px rgba(138,75,255,0.18), 0 10px 24px rgba(11,9,38,0.22); border-color: rgba(255,255,255,0.28);}
+		60%  { box-shadow: 0 0 6px 3px rgba(138,75,255,0.10), 0 10px 24px rgba(11,9,38,0.22); border-color: rgba(255,255,255,0.12);}
+		100% { box-shadow: 0 0 0 0 rgba(138,75,255,0), 0 10px 24px rgba(11,9,38,0.22); border-color: rgba(255,255,255,0.12);}
 	}
 	@keyframes blink-bg {
 		0%   { background-position: 0% 50%; }
