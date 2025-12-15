@@ -34,9 +34,14 @@
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
-                // API pagination returns data in `data.data` or just `data` if not paginated. 
-                // Based on Controller: return response()->json($products, 200); where $products is paginated.
-                categoryProducts = data.data || [];
+                
+                // FIX: Map the API data to include the 'image' property expected by ProductCard
+                const rawData = data.data || [];
+                categoryProducts = rawData.map((item: any) => ({
+                    ...item,
+                    image: item.image_url || '/images/placeholder.png' // Map image_url to image
+                }));
+                
             } else {
                 console.error('Failed to fetch products');
                 categoryProducts = [];

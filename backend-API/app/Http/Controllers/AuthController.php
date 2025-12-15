@@ -61,6 +61,32 @@ class AuthController extends Controller
         ], 201);
     }
 
+    public function update(Request $request)
+    {
+        $user = $request->user();
+
+        // Validate input
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'phone_number' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:1000',
+        ]);
+
+        // Update user
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone_number' => $validated['phone_number'] ?? null,
+            'address' => $validated['address'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Profil berhasil diperbarui',
+            'user' => $user,
+        ], 200);
+    }
+
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();

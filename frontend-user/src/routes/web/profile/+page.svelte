@@ -4,8 +4,10 @@
     import { PUBLIC_API_URL } from '$env/static/public';
 
     // --- State ---
-    let activeTab = 'profile'; // 'profile' | 'orders'
+    let activeTab = 'profile'; 
     let isLoading = true;
+    let isEditing = false; // New: Edit mode state
+    let isSaving = false;  // New: Saving loading state
     
     // Data User
     let userProfile = {
@@ -15,11 +17,18 @@
         address: '-'
     };
 
+    // New: Buffer for editing data
+    let editData = {
+        name: '',
+        email: '',
+        phone_number: '',
+        address: ''
+    };
+
     // Data Order
     let orders: any[] = [];
     let orderPagination: any = {};
 
-    // --- Helpers ---
     function formatRupiah(number: number) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
     }
@@ -31,7 +40,6 @@
 
     // Mapping Status dari Backend (1, 2, 3) ke Teks & Warna
     const getStatusInfo = (status: string | number) => {
-        // Konversi ke string untuk aman
         const s = String(status);
         if (s === '1') return { label: 'Menunggu Pembayaran', class: 'status-pending' };
         if (s === '2') return { label: 'Lunas', class: 'status-success' };
@@ -58,7 +66,6 @@
             if (userRes.ok) {
                 userProfile = await userRes.json();
             } else {
-                // Token expired
                 localStorage.removeItem('auth_token');
                 goto('/web/login');
                 return;
@@ -71,7 +78,6 @@
 
             if (orderRes.ok) {
                 const data = await orderRes.json();
-                // Backend mengembalikan pagination, data pesanan ada di properti 'data'
                 orders = data.data || [];
                 orderPagination = data; 
             }
@@ -89,6 +95,49 @@
             window.open(`https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`, '_blank');
         } else {
             alert("Token pembayaran tidak ditemukan.");
+        }
+    }
+
+    function startEdit() {
+        // Copy current profile to edit buffer
+        editData = { ...userProfile };
+        isEditing = true;
+    }
+
+    function cancelEdit() {
+        isEditing = false;
+    }
+
+    async function saveProfile() {
+        isSaving = true;
+        const token = localStorage.getItem('auth_token');
+
+        try {
+            const res = await fetch(`${PUBLIC_API_URL}/user`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json' 
+                },
+                body: JSON.stringify(editData)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                userProfile = data.user; // Update displayed data
+                isEditing = false;
+                alert('Profil berhasil diperbarui!');
+            } else {
+                alert(data.message || 'Gagal memperbarui profil.');
+                if (data.errors) console.error(data.errors);
+            }
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            alert("Terjadi kesalahan koneksi.");
+        } finally {
+            isSaving = false;
         }
     }
 </script>
@@ -143,31 +192,66 @@
                 {:else}
                     
                     {#if activeTab === 'profile'}
-                        <header class="content-header">
-                            <h2>Biodata Diri</h2>
-                            <p class="subtitle">Informasi pribadi dan alamat pengiriman Anda.</p>
+                        <header class="content-header" style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h2>Biodata Diri</h2>
+                                <p class="subtitle">Informasi pribadi dan alamat pengiriman Anda.</p>
+                            </div>
+                            {#if !isEditing}
+                                <button class="btn-edit" on:click={startEdit}>
+                                    ✎ Edit Profil
+                                </button>
+                            {/if}
                         </header>
                         
-                        <div class="info-grid">
-                            <div class="info-group">
-                                <label>Nama Lengkap</label>
-                                <div class="info-value">{userProfile.name}</div>
-                            </div>
-                            <div class="info-group">
-                                <label>Email</label>
-                                <div class="info-value">{userProfile.email}</div>
-                            </div>
-                            <div class="info-group">
-                                <label>Nomor Telepon</label>
-                                <div class="info-value">{userProfile.phone_number || '-'}</div>
-                            </div>
-                            <div class="info-group full-width">
-                                <label>Alamat Lengkap</label>
-                                <div class="info-value address-box">
-                                    {userProfile.address || 'Alamat belum diatur.'}
+                        {#if isEditing}
+                            <form class="edit-form" on:submit|preventDefault={saveProfile}>
+                                <div class="form-group">
+                                    <label for="name">Nama Lengkap</label>
+                                    <input type="text" id="name" bind:value={editData.name} required class="form-input" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" bind:value={editData.email} required class="form-input" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Nomor Telepon</label>
+                                    <input type="text" id="phone" bind:value={editData.phone_number} class="form-input" placeholder="08..." />
+                                </div>
+                                <div class="form-group">
+                                    <label for="address">Alamat Lengkap</label>
+                                    <textarea id="address" bind:value={editData.address} rows="3" class="form-input" placeholder="Jalan..."></textarea>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" class="btn-cancel" on:click={cancelEdit} disabled={isSaving}>Batal</button>
+                                    <button type="submit" class="btn-save" disabled={isSaving}>
+                                        {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                    </button>
+                                </div>
+                            </form>
+                        {:else}
+                            <div class="info-grid">
+                                <div class="info-group">
+                                    <label>Nama Lengkap</label>
+                                    <div class="info-value">{userProfile.name}</div>
+                                </div>
+                                <div class="info-group">
+                                    <label>Email</label>
+                                    <div class="info-value">{userProfile.email}</div>
+                                </div>
+                                <div class="info-group">
+                                    <label>Nomor Telepon</label>
+                                    <div class="info-value">{userProfile.phone_number || '-'}</div>
+                                </div>
+                                <div class="info-group full-width">
+                                    <label>Alamat Lengkap</label>
+                                    <div class="info-value address-box">
+                                        {userProfile.address || 'Alamat belum diatur.'}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        {/if}
 
                     {:else if activeTab === 'orders'}
                         <header class="content-header">
@@ -316,5 +400,90 @@
         .sidebar-card { width: 100%; }
         .info-grid { grid-template-columns: 1fr; }
         .order-body { flex-direction: column; align-items: flex-start; }
+    }
+    .btn-edit {
+        background: white;
+        border: 1px solid #e2e8f0;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #64748b;
+        transition: all 0.2s;
+    }
+    .btn-edit:hover {
+        background: #f1f5f9;
+        color: #334155;
+    }
+
+    .edit-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-width: 600px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .form-input {
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #8E42E1;
+        box-shadow: 0 0 0 3px rgba(142, 66, 225, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 10px;
+    }
+
+    .btn-save {
+        background: #8E42E1;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .btn-save:hover {
+        background: #7c3aed;
+    }
+    .btn-save:disabled {
+        background: #c4b5fd;
+        cursor: not-allowed;
+    }
+
+    .btn-cancel {
+        background: white;
+        border: 1px solid #cbd5e1;
+        color: #64748b;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .btn-cancel:hover {
+        background: #f8fafc;
+        color: #334155;
     }
 </style>

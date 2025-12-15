@@ -17,6 +17,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //auth routes
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::put('/user', [AuthController::class, 'update']);
     //vendor and product management routes
     Route::post('/vendor/register', [VendorController::class, 'register']);
     Route::get('/vendor/profile', [VendorController::class, 'vendorProfile']);

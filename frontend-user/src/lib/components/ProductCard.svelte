@@ -147,7 +147,7 @@
 <div class="product-card">
     <div class="product-image-area">
         <a href="/web/product/{product.id}" class="image-link" aria-label="Lihat detail {product.title}">
-            <img src={imageUrl} alt={product.title} on:error={handleImageError} />
+            <img src={product.image} alt={product.title} on:error={handleImageError} />
             
             {#if product.stock_quantity <= 0}
                 <div class="out-of-stock">Habis Stok</div>
