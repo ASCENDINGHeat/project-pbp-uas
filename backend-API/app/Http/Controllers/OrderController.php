@@ -27,6 +27,14 @@ class OrderController extends Controller
             'selected_cart_ids' => 'required|array|min:1', // Harus array dan minimal 1
             'selected_cart_ids.*' => 'integer|exists:cart,id', // Pastikan ID valid
         ]);
+
+        // --- ADD THIS DEBUGGING CODE ---
+        \Illuminate\Support\Facades\Log::info('--- MIDTRANS CHECKOUT DEBUG ---');
+        // Check what is actually loaded in the config
+        \Illuminate\Support\Facades\Log::info('Config Server Key: ' . config('midtrans.server_key')); 
+        \Illuminate\Support\Facades\Log::info('Is Production: ' . config('midtrans.is_production'));
+        // -------------------------------
+
         // Start a transaction to prevent partial order creation if an error occurs.
         DB::beginTransaction();
 
@@ -137,7 +145,12 @@ class OrderController extends Controller
             return response()->json(['message' => 'Checkout failed.', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log the error message
+            
+            // --- THIS WRITES TO storage/logs/laravel.log ---
+            \Illuminate\Support\Facades\Log::error('Checkout Failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error($e->getTraceAsString()); // Optional: see full error trace
+            // -----------------------------------------------
+
             return response()->json(['message' => 'An unexpected error occurred during checkout.', 'error' => $e->getMessage()], 500);
         }
     }
@@ -165,6 +178,7 @@ class OrderController extends Controller
 
         return response()->json($parentOrder);
     }
+
     public function receive(Request $request)
     {
         $serverKey = config('midtrans.server_key');
@@ -177,10 +191,10 @@ class OrderController extends Controller
         $incomingSignature = $request->signature_key;
 
         // DEBUGGING: Log these to storage/logs/laravel.log to see the mismatch
-        \Log::info("Midtrans Callback Debug:");
-        \Log::info("My String to Hash: " . $hashedString);
-        \Log::info("My Signature: " . $mySignature);
-        \Log::info("Incoming Signature: " . $incomingSignature);
+        Log::info("Midtrans Callback Debug:");
+        Log::info("My String to Hash: " . $hashedString);
+        Log::info("My Signature: " . $mySignature);
+        Log::info("Incoming Signature: " . $incomingSignature);
 
         if ($mySignature !== $incomingSignature) {
             return response()->json(['message' => 'Invalid Signature'], 403);
