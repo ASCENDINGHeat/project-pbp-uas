@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { PUBLIC_API_URL } from '$env/static/public';
 
@@ -9,7 +9,7 @@
     let isEditing = false;
     let isSaving = false;
     let isRefreshing = false; // New state for refresh button
-    let pollInterval;
+    
     // Data User
     let userProfile = {
         name: '',
@@ -97,23 +97,8 @@
         } finally {
             isLoading = false;
         }
-        startPolling();
     });
-    onDestroy(() => {
-    if (pollInterval) clearInterval(pollInterval);
-    });
-    function startPolling() {
-    pollInterval = setInterval(() => {
-        // Cek apakah ada order yang statusnya '1' (Pending)
-        const hasPending = orders.some(o => String(o.payment_status) === '1');
-        
-        if (hasPending && !isEditing && activeTab === 'orders') {
-            // Lakukan fetch diam-diam (tanpa loading spinner penuh)
-            const token = localStorage.getItem('auth_token');
-            if (token) fetchOrdersData(token); 
-        }
-    }, 5000); // Cek setiap 5 detik
-}
+
     function payOrder(snapToken: string) {
         if(snapToken) {
             window.open(`https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`, '_blank');
