@@ -4,10 +4,11 @@
     import { PUBLIC_API_URL } from '$env/static/public';
 
     // --- State ---
-    let activeTab = 'profile'; 
+    let activeTab = 'profile';
     let isLoading = true;
-    let isEditing = false; // New: Edit mode state
-    let isSaving = false;  // New: Saving loading state
+    let isEditing = false;
+    let isSaving = false;
+    let isRefreshing = false; // New state for refresh button
     
     // Data User
     let userProfile = {
@@ -16,8 +17,6 @@
         phone_number: '-',
         address: '-'
     };
-
-    // New: Buffer for editing data
     let editData = {
         name: '',
         email: '',
@@ -38,19 +37,50 @@
         return new Date(dateString).toLocaleDateString('id-ID', options);
     }
 
-    // Mapping Status dari Backend (1, 2, 3) ke Teks & Warna
+    // Mapping Status
     const getStatusInfo = (status: string | number) => {
         const s = String(status);
-        if (s === '1') return { label: 'Menunggu Pembayaran', class: 'status-pending' };
-        if (s === '2') return { label: 'Lunas', class: 'status-success' };
-        if (s === '3') return { label: 'Dibatalkan / Kadaluarsa', class: 'status-failed' };
-        return { label: 'Unknown', class: 'status-default' };
+        if (s === '1') return { label: 'Menunggu Pembayaran', class: 'bg-yellow-100 text-yellow-700' };
+        if (s === '2') return { label: 'Lunas', class: 'bg-green-100 text-green-700' };
+        if (s === '3') return { label: 'Dibatalkan / Kadaluarsa', class: 'bg-red-100 text-red-700' };
+        return { label: 'Unknown', class: 'bg-gray-100 text-gray-600' };
     };
 
-    // --- Fetch Data ---
+    // --- Fetch Data Functions ---
+    async function fetchUserData(token: string) {
+        const userRes = await fetch(`${PUBLIC_API_URL}/user`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        });
+        if (userRes.ok) {
+            userProfile = await userRes.json();
+        } else {
+            localStorage.removeItem('auth_token');
+            goto('/web/login');
+        }
+    }
+
+    async function fetchOrdersData(token: string) {
+        const orderRes = await fetch(`${PUBLIC_API_URL}/orders`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        });
+        if (orderRes.ok) {
+            const data = await orderRes.json();
+            orders = data.data || [];
+            orderPagination = data; 
+        }
+    }
+
+    async function handleRefreshOrders() {
+        const token = localStorage.getItem('auth_token');
+        if(!token) return;
+        
+        isRefreshing = true;
+        await fetchOrdersData(token);
+        isRefreshing = false;
+    }
+
     onMount(async () => {
         const token = localStorage.getItem('auth_token');
-        
         if (!token) {
             alert("Silakan login terlebih dahulu.");
             goto('/web/login');
@@ -58,30 +88,10 @@
         }
 
         try {
-            // 1. Fetch Data User
-            const userRes = await fetch(`${PUBLIC_API_URL}/user`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-            });
-
-            if (userRes.ok) {
-                userProfile = await userRes.json();
-            } else {
-                localStorage.removeItem('auth_token');
-                goto('/web/login');
-                return;
-            }
-
-            // 2. Fetch Riwayat Pesanan
-            const orderRes = await fetch(`${PUBLIC_API_URL}/orders`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-            });
-
-            if (orderRes.ok) {
-                const data = await orderRes.json();
-                orders = data.data || [];
-                orderPagination = data; 
-            }
-
+            await Promise.all([
+                fetchUserData(token),
+                fetchOrdersData(token)
+            ]);
         } catch (error) {
             console.error("Gagal memuat data:", error);
         } finally {
@@ -89,7 +99,6 @@
         }
     });
 
-    // Fungsi Lanjut Bayar (Jika status masih pending dan ada snap_token)
     function payOrder(snapToken: string) {
         if(snapToken) {
             window.open(`https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`, '_blank');
@@ -99,7 +108,6 @@
     }
 
     function startEdit() {
-        // Copy current profile to edit buffer
         editData = { ...userProfile };
         isEditing = true;
     }
@@ -122,16 +130,14 @@
                 },
                 body: JSON.stringify(editData)
             });
-
             const data = await res.json();
 
             if (res.ok) {
-                userProfile = data.user; // Update displayed data
+                userProfile = data.user;
                 isEditing = false;
                 alert('Profil berhasil diperbarui!');
             } else {
                 alert(data.message || 'Gagal memperbarui profil.');
-                if (data.errors) console.error(data.errors);
             }
         } catch (error) {
             console.error("Error updating profile:", error);
@@ -146,107 +152,109 @@
     <title>Profil Saya - PC Store</title>
 </svelte:head>
 
-<div class="breadcrumb-wrapper">
-    <div class="breadcrumb-pill">
-        <a class="breadcrumb-link" href="/web">Home</a>
-        <span class="breadcrumb-sep">›</span>
-        <span class="breadcrumb-current">Profil Pengguna</span>
+<div class="w-[95%] mx-auto my-5 flex">
+    <div class="inline-flex items-center gap-2 bg-slate-900 rounded-full px-4 py-2 text-sm text-slate-400">
+        <a class="text-slate-400 hover:text-white no-underline" href="/web">Home</a>
+        <span class="text-xs">›</span>
+        <span class="text-purple-500 font-bold">Profil Pengguna</span>
     </div>
 </div>
 
-<main class="profile-page">
-    <div class="container">
+<main class="min-h-screen bg-slate-50 py-10 px-5">
+    <div class="max-w-6xl mx-auto">
         
-        <div class="profile-layout">
-            <aside class="sidebar-card">
-                <div class="user-brief">
-                    <div class="avatar-circle">
+        <div class="flex flex-col md:flex-row gap-8 items-start">
+            <aside class="w-full md:w-[280px] bg-white rounded-xl shadow-sm overflow-hidden flex-shrink-0">
+                <div class="p-8 text-center bg-gradient-to-br from-slate-800 to-slate-900 text-white">
+                    <div class="w-20 h-20 bg-purple-600 text-white rounded-full flex items-center justify-center text-4xl font-bold mx-auto mb-4 border-4 border-white/20">
                         {userProfile.name.charAt(0).toUpperCase()}
                     </div>
-                    <h3>{userProfile.name}</h3>
-                    <p>{userProfile.email}</p>
+                    <h3 class="m-0 text-lg font-bold">{userProfile.name}</h3>
+                    <p class="m-0 mt-1 text-sm opacity-80">{userProfile.email}</p>
                 </div>
-                <nav class="nav-menu">
+                <nav class="p-4 flex flex-col gap-1">
                     <button 
-                        class="nav-item {activeTab === 'profile' ? 'active' : ''}" 
+                        class="w-full text-left p-3 rounded-lg font-semibold text-sm transition-colors {activeTab === 'profile' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'}" 
                         on:click={() => activeTab = 'profile'}>
                         👤 Biodata Diri
                     </button>
                     <button 
-                        class="nav-item {activeTab === 'orders' ? 'active' : ''}" 
+                        class="w-full text-left p-3 rounded-lg font-semibold text-sm transition-colors {activeTab === 'orders' ? 'bg-purple-50 text-purple-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'}" 
                         on:click={() => activeTab = 'orders'}>
                         📦 Riwayat Pesanan
                     </button>
-                    <button class="nav-item logout" on:click={() => {
-                        localStorage.removeItem('auth_token');
-                        goto('/web/login');
-                    }}>
+                    <div class="h-px bg-slate-100 my-2"></div>
+                    <button class="w-full text-left p-3 rounded-lg font-semibold text-sm text-red-500 hover:bg-red-50 transition-colors" 
+                        on:click={() => {
+                            localStorage.removeItem('auth_token');
+                            goto('/web/login');
+                        }}>
                         🚪 Logout
                     </button>
                 </nav>
             </aside>
 
-            <section class="content-card">
+            <section class="flex-1 bg-white rounded-xl shadow-sm p-8 w-full min-h-[400px]">
                 {#if isLoading}
-                    <div class="loading-state">Memuat data...</div>
+                    <div class="text-center py-10 text-slate-500">Memuat data...</div>
                 {:else}
                     
                     {#if activeTab === 'profile'}
-                        <header class="content-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <header class="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
                             <div>
-                                <h2>Biodata Diri</h2>
-                                <p class="subtitle">Informasi pribadi dan alamat pengiriman Anda.</p>
+                                <h2 class="m-0 text-2xl font-bold text-slate-800">Biodata Diri</h2>
+                                <p class="m-0 mt-1 text-slate-500 text-sm">Informasi pribadi dan alamat pengiriman Anda.</p>
                             </div>
                             {#if !isEditing}
-                                <button class="btn-edit" on:click={startEdit}>
+                                <button class="bg-white border border-slate-200 px-4 py-2 rounded-lg font-semibold text-slate-600 text-sm hover:bg-slate-50 hover:text-slate-900 transition-colors" on:click={startEdit}>
                                     ✎ Edit Profil
                                 </button>
                             {/if}
                         </header>
                         
                         {#if isEditing}
-                            <form class="edit-form" on:submit|preventDefault={saveProfile}>
-                                <div class="form-group">
-                                    <label for="name">Nama Lengkap</label>
-                                    <input type="text" id="name" bind:value={editData.name} required class="form-input" />
+                            <form class="flex flex-col gap-4 max-w-xl" on:submit|preventDefault={saveProfile}>
+                                <div class="flex flex-col gap-1.5">
+                                    <label for="name" class="text-sm font-semibold text-slate-600">Nama Lengkap</label>
+                                    <input type="text" id="name" bind:value={editData.name} required class="p-2.5 border border-slate-300 rounded-lg text-base focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
                                 </div>
-                                <div class="form-group">
-                                    <label for="email">Email</label>
-                                    <input type="email" id="email" bind:value={editData.email} required class="form-input" />
+                                <div class="flex flex-col gap-1.5">
+                                    <label for="email" class="text-sm font-semibold text-slate-600">Email</label>
+                                    <input type="email" id="email" bind:value={editData.email} required class="p-2.5 border border-slate-300 rounded-lg text-base focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
                                 </div>
-                                <div class="form-group">
-                                    <label for="phone">Nomor Telepon</label>
-                                    <input type="text" id="phone" bind:value={editData.phone_number} class="form-input" placeholder="08..." />
+                                <div class="flex flex-col gap-1.5">
+                                    <label for="phone" class="text-sm font-semibold text-slate-600">Nomor Telepon</label>
+                                    <input type="text" id="phone" bind:value={editData.phone_number} class="p-2.5 border border-slate-300 rounded-lg text-base focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="08..." />
                                 </div>
-                                <div class="form-group">
-                                    <label for="address">Alamat Lengkap</label>
-                                    <textarea id="address" bind:value={editData.address} rows="3" class="form-input" placeholder="Jalan..."></textarea>
+                                <div class="flex flex-col gap-1.5">
+                                    <label for="address" class="text-sm font-semibold text-slate-600">Alamat Lengkap</label>
+                                    <textarea id="address" bind:value={editData.address} rows="3" class="p-2.5 border border-slate-300 rounded-lg text-base focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" placeholder="Jalan..."></textarea>
                                 </div>
 
-                                <div class="form-actions">
-                                    <button type="button" class="btn-cancel" on:click={cancelEdit} disabled={isSaving}>Batal</button>
-                                    <button type="submit" class="btn-save" disabled={isSaving}>
+                                <div class="flex gap-3 mt-2">
+                                    <button type="button" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition-colors" on:click={cancelEdit} disabled={isSaving}>Batal</button>
+                                    <button type="submit" class="px-5 py-2.5 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors disabled:bg-purple-300" disabled={isSaving}>
                                         {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
                                     </button>
                                 </div>
                             </form>
                         {:else}
-                            <div class="info-grid">
-                                <div class="info-group">
-                                    <label>Nama Lengkap</label>
-                                    <div class="info-value">{userProfile.name}</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Nama Lengkap</label>
+                                    <div class="text-base text-slate-800 font-medium py-2 border-b border-dashed border-slate-200">{userProfile.name}</div>
                                 </div>
-                                <div class="info-group">
-                                    <label>Email</label>
-                                    <div class="info-value">{userProfile.email}</div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Email</label>
+                                    <div class="text-base text-slate-800 font-medium py-2 border-b border-dashed border-slate-200">{userProfile.email}</div>
                                 </div>
-                                <div class="info-group">
-                                    <label>Nomor Telepon</label>
-                                    <div class="info-value">{userProfile.phone_number || '-'}</div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Nomor Telepon</label>
+                                    <div class="text-base text-slate-800 font-medium py-2 border-b border-dashed border-slate-200">{userProfile.phone_number || '-'}</div>
                                 </div>
-                                <div class="info-group full-width">
-                                    <label>Alamat Lengkap</label>
-                                    <div class="info-value address-box">
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Alamat Lengkap</label>
+                                    <div class="bg-slate-50 p-4 rounded-lg text-slate-800 border border-slate-100">
                                         {userProfile.address || 'Alamat belum diatur.'}
                                     </div>
                                 </div>
@@ -254,42 +262,52 @@
                         {/if}
 
                     {:else if activeTab === 'orders'}
-                        <header class="content-header">
-                            <h2>Riwayat Pesanan</h2>
-                            <p class="subtitle">Daftar transaksi yang pernah Anda lakukan.</p>
+                        <header class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="m-0 text-2xl font-bold text-slate-800">Riwayat Pesanan</h2>
+                                <p class="m-0 mt-1 text-slate-500 text-sm">Daftar transaksi yang pernah Anda lakukan.</p>
+                            </div>
+                            <button class="bg-white border border-slate-200 p-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-purple-600 transition-colors" on:click={handleRefreshOrders} title="Refresh Status">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:animate-spin={isRefreshing}>
+                                    <path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
                         </header>
 
                         {#if orders.length === 0}
-                            <div class="empty-orders">
-                                <p>Belum ada pesanan.</p>
-                                <button class="btn-shop" on:click={() => goto('/web')}>Mulai Belanja</button>
+                            <div class="text-center py-12">
+                                <p class="text-slate-500 mb-4">Belum ada pesanan.</p>
+                                <button class="bg-slate-900 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-slate-800 transition-colors" on:click={() => goto('/web')}>Mulai Belanja</button>
                             </div>
                         {:else}
-                            <div class="order-list">
+                            <div class="flex flex-col gap-5">
                                 {#each orders as order}
                                     {@const status = getStatusInfo(order.payment_status)}
-                                    <div class="order-card">
-                                        <div class="order-header">
-                                            <div class="order-id">ID Pesanan: #{order.id}</div>
-                                            <div class="order-date">{formatDate(order.created_at)}</div>
+                                    <div class="border border-slate-200 rounded-xl overflow-hidden transition-all hover:border-slate-300 hover:shadow-sm">
+                                        <div class="bg-slate-50 px-5 py-3 flex justify-between items-center border-b border-slate-200 text-sm text-slate-500">
+                                            <div class="font-bold text-slate-700">ID Pesanan: #{order.id}</div>
+                                            <div>{formatDate(order.created_at)}</div>
                                         </div>
                                         
-                                        <div class="order-body">
-                                            <div class="order-total">
+                                        <div class="p-5 flex flex-wrap gap-4 justify-between items-center">
+                                            <div class="text-lg text-slate-800">
                                                 Total Belanja: <strong>{formatRupiah(order.total_amount)}</strong>
                                             </div>
-                                            <div class="order-status">
-                                                Status: <span class="badge {status.class}">{status.label}</span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm text-slate-500">Status:</span>
+                                                <span class="px-3 py-1 rounded-full text-xs font-bold {status.class}">{status.label}</span>
                                             </div>
                                         </div>
 
-                                        <div class="order-footer">
-                                            {#if String(order.payment_status) === '1'}
-                                                <button class="btn-pay" on:click={() => payOrder(order.snap_token)}>
-                                                    Bayar Sekarang
-                                                </button>
-                                            {/if}
-                                            <span class="note">*Detail produk dikirim ke email vendor</span>
+                                        <div class="px-5 py-3 bg-white border-t border-dashed border-slate-200 flex justify-between items-center">
+                                            <div>
+                                                {#if String(order.payment_status) === '1'}
+                                                    <button class="bg-purple-600 text-white border-none px-4 py-2 rounded-lg cursor-pointer font-semibold text-sm hover:bg-purple-700 transition-colors" on:click={() => payOrder(order.snap_token)}>
+                                                        Bayar Sekarang
+                                                    </button>
+                                                {/if}
+                                            </div>
+                                            <span class="text-xs text-slate-400 italic">*Detail produk dikirim ke email vendor</span>
                                         </div>
                                     </div>
                                 {/each}
@@ -303,187 +321,3 @@
 
     </div>
 </main>
-
-<style>
-    /* --- Layout & Reset --- */
-    :global(body) { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; }
-    
-    .breadcrumb-wrapper { width: 95%; margin: 20px auto; display: flex; }
-    .breadcrumb-pill { background: #0f172a; padding: 8px 16px; border-radius: 50px; display: inline-flex; align-items: center; gap: 8px; color: #94a3b8; font-size: 0.9rem; }
-    .breadcrumb-link { color: #94a3b8; text-decoration: none; }
-    .breadcrumb-current { color: #8E42E1; font-weight: 700; }
-
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    
-    .profile-layout {
-        display: flex; gap: 30px;
-        align-items: flex-start;
-    }
-
-    /* --- Sidebar --- */
-    .sidebar-card {
-        flex: 0 0 280px;
-        background: white; border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-        overflow: hidden;
-    }
-
-    .user-brief {
-        padding: 30px 20px; text-align: center;
-        background: linear-gradient(135deg, #1e293b, #0f172a); color: white;
-    }
-    .avatar-circle {
-        width: 80px; height: 80px; background: #8E42E1; color: white;
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        font-size: 2.5rem; font-weight: 700; margin: 0 auto 15px;
-        border: 4px solid rgba(255,255,255,0.2);
-    }
-    .user-brief h3 { margin: 0; font-size: 1.1rem; font-weight: 700; }
-    .user-brief p { margin: 5px 0 0; font-size: 0.9rem; opacity: 0.8; }
-
-    .nav-menu { padding: 15px; display: flex; flex-direction: column; gap: 5px; }
-    .nav-item {
-        text-align: left; background: none; border: none; padding: 12px 15px;
-        border-radius: 8px; cursor: pointer; color: #64748b; font-weight: 600;
-        transition: all 0.2s; font-size: 0.95rem; width: 100%;
-    }
-    .nav-item:hover { background: #f1f5f9; color: #334155; }
-    .nav-item.active { background: #f3e8ff; color: #8E42E1; }
-    .nav-item.logout { color: #ef4444; margin-top: 10px; border-top: 1px solid #f1f5f9; border-radius: 0; }
-    .nav-item.logout:hover { background: #fef2f2; }
-
-    /* --- Content --- */
-    .content-card {
-        flex: 1; background: white; border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.05); padding: 30px;
-        min-height: 400px;
-    }
-    .content-header { margin-bottom: 30px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; }
-    .content-header h2 { margin: 0; color: #1e293b; font-size: 1.5rem; font-weight: 800; }
-    .content-header .subtitle { margin: 5px 0 0; color: #64748b; font-size: 0.95rem; }
-
-    /* --- Profile Info --- */
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .info-group label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-value { font-size: 1.05rem; color: #334155; font-weight: 500; padding: 10px 0; border-bottom: 1px dashed #e2e8f0; }
-    .address-box { line-height: 1.6; border-bottom: none; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #f1f5f9; }
-    .full-width { grid-column: 1 / -1; }
-
-    /* --- Order List --- */
-    .order-list { display: flex; flex-direction: column; gap: 20px; }
-    .order-card { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; transition: all 0.2s; }
-    .order-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    
-    .order-header { background: #f8fafc; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #64748b; }
-    .order-id { font-weight: 700; color: #334155; }
-    
-    .order-body { padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-    .order-total { font-size: 1.1rem; color: #1e293b; }
-    
-    .badge { padding: 6px 12px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; }
-    .status-pending { background: #fef9c3; color: #854d0e; }
-    .status-success { background: #dcfce7; color: #166534; }
-    .status-failed { background: #fee2e2; color: #991b1b; }
-    .status-default { background: #f1f5f9; color: #475569; }
-
-    .order-footer { padding: 12px 20px; background: #fff; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-    .btn-pay { background: #8E42E1; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
-    .btn-pay:hover { background: #7c3aed; }
-    .note { font-size: 0.8rem; color: #94a3b8; font-style: italic; }
-
-    .empty-orders { text-align: center; padding: 40px; color: #64748b; }
-    .btn-shop { margin-top: 15px; padding: 10px 20px; background: #0f172a; color: white; border: none; border-radius: 8px; cursor: pointer; }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .profile-layout { flex-direction: column; }
-        .sidebar-card { width: 100%; }
-        .info-grid { grid-template-columns: 1fr; }
-        .order-body { flex-direction: column; align-items: flex-start; }
-    }
-    .btn-edit {
-        background: white;
-        border: 1px solid #e2e8f0;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-        color: #64748b;
-        transition: all 0.2s;
-    }
-    .btn-edit:hover {
-        background: #f1f5f9;
-        color: #334155;
-    }
-
-    .edit-form {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        max-width: 600px;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .form-group label {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #475569;
-    }
-
-    .form-input {
-        padding: 10px 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 1rem;
-        font-family: inherit;
-        transition: border-color 0.2s;
-    }
-    .form-input:focus {
-        outline: none;
-        border-color: #8E42E1;
-        box-shadow: 0 0 0 3px rgba(142, 66, 225, 0.1);
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 10px;
-    }
-
-    .btn-save {
-        background: #8E42E1;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    .btn-save:hover {
-        background: #7c3aed;
-    }
-    .btn-save:disabled {
-        background: #c4b5fd;
-        cursor: not-allowed;
-    }
-
-    .btn-cancel {
-        background: white;
-        border: 1px solid #cbd5e1;
-        color: #64748b;
-        padding: 10px 20px;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    .btn-cancel:hover {
-        background: #f8fafc;
-        color: #334155;
-    }
-</style>

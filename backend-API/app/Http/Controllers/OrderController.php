@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Midtrans\Snap;
 use Midtrans\Config;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -29,10 +30,10 @@ class OrderController extends Controller
         ]);
 
         // --- ADD THIS DEBUGGING CODE ---
-        \Illuminate\Support\Facades\Log::info('--- MIDTRANS CHECKOUT DEBUG ---');
+        Log::info('--- MIDTRANS CHECKOUT DEBUG ---');
         // Check what is actually loaded in the config
-        \Illuminate\Support\Facades\Log::info('Config Server Key: ' . config('midtrans.server_key')); 
-        \Illuminate\Support\Facades\Log::info('Is Production: ' . config('midtrans.is_production'));
+        Log::info('Config Server Key: ' . config('midtrans.server_key')); 
+        Log::info('Is Production: ' . config('midtrans.is_production'));
         // -------------------------------
 
         // Start a transaction to prevent partial order creation if an error occurs.
