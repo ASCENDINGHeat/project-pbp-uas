@@ -63,7 +63,7 @@
             return;
         }
         event.preventDefault();
-        goto(`/web/product-pcready/${product.id}`);
+        goto(`/web/product/${product.id}`);
     }
 
     const formatPrice = (price: number) => {
@@ -90,7 +90,7 @@
         <div class="grid" style={`display:grid; gap:20px; grid-template-columns: repeat(${responsiveColumns}, 1fr);`}>
             {#each pcReady as product (product.id)}
                 <a
-                    href={`/web/product-pcready/${product.id}`}
+                    href={`/web/product/${product.id}`}
                     class="prod-card"
                     data-sveltekit-preload-data="hover"
                     on:click={(e) => handleAnchorClick(e as MouseEvent, product)}

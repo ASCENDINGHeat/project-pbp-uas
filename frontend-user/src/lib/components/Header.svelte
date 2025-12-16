@@ -110,7 +110,7 @@
 	<div class="site-top">
 		<div class="brand">
 			<div class="brand-top-row">
-				<a href="/web" class="logo" aria-label="Beranda - PC Store">PC Store</a>
+				<a href="/web" class="logo" aria-label="Beranda - PC Store">TechForge</a>
 				
 				<div class="brand-action-row">
 					<BrandButton variant="pc" ariaLabel="PC Ready" on:click={() => goto('/web/pc-ready')}>PC Ready</BrandButton>
