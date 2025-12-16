@@ -18,8 +18,8 @@ The project is structured into two main parts:
 
 ## Tech Stack
 
-* **Backend:** Laravel (PHP), MySQL, Sanctum (Auth).
-* **Frontend:** SvelteKit (Node.js), Vite.
+* **Backend:** Laravel (PHP), Postgresql, Sanctum (Auth).
+* **Frontend:** SvelteKit (Node.js), Vite, Tailwindcss.
 * **Database:** Postgresql.
 
 ---
