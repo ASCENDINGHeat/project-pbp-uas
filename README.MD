@@ -102,6 +102,7 @@ npm install
 # Start the development server
 npm run dev
 ```
+
 Create .env file for connecting to the api
 
 ```.env
@@ -111,7 +112,7 @@ PUBLIC_STORAGE_URL=YOUR_API_URL/storage
 
 The frontend will usually be accessible at `http://localhost:5173` (check your terminal output for the exact URL).
 
------
+---
 
 ## Configuration Notes
 
@@ -131,8 +132,8 @@ MIDTRANS_IS_PRODUCTION=false
 
 ## Troubleshooting
 
-  * **Images not loading:** Ensure you ran `php artisan storage:link` in the backend folder.
-  * **CORS Errors:** If the frontend cannot talk to the backend, check `backend-API/config/cors.php` or ensure both are running on the expected ports.
-  * **Database Connection Refused:** Verify your MySQL server is running and the credentials in `.env` are correct.
+* **Images not loading:** Ensure you ran `php artisan storage:link` in the backend folder.
+* **CORS Errors:** If the frontend cannot talk to the backend, check `backend-API/config/cors.php` or ensure both are running on the expected ports.
+* **Database Connection Refused:** Verify your Postgresql server is running and the credentials in `.env` are correct.
 
 <!-- end list -->
