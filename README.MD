@@ -100,6 +100,12 @@ npm install
 # Start the development server
 npm run dev
 ```
+Create .env file for connecting to the api
+
+```.env
+PUBLIC_API_URL=YOUR_API_URL/api
+PUBLIC_STORAGE_URL=YOUR_API_URL/storage
+```
 
 The frontend will usually be accessible at `http://localhost:5173` (check your terminal output for the exact URL).
 
