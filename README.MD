@@ -3,8 +3,9 @@
 This is a full-stack e-commerce web application developed for the Platform-Based Programming (PBP) Final Exam (UAS). The application focuses on selling computer components, ready-to-use PCs, and allows users to simulate PC builds.
 
 The project is structured into two main parts:
-1.  **Backend:** A RESTful API built with **Laravel**.
-2.  **Frontend:** A modern user interface built with **SvelteKit**.
+
+1. **Backend:** A RESTful API built with **Laravel**.
+2. **Frontend:** A modern user interface built with **SvelteKit**.
 
 ## Features
 
@@ -38,8 +39,9 @@ Before running the project, ensure you have the following installed locally:
 ## Installation & Local Setup
 
 ### 1. Database Setup
-1.  Open your database management tool (phpMyAdmin, DBeaver, TablePlus, etc.).
-2.  Create a new, empty database. For this guide, we will name it `pbp_uas`.
+
+1. Open your database management tool (phpMyAdmin, DBeaver, TablePlus, etc.).
+2. Create a new, empty database. For this guide, we will name it `pbp_uas`.
 
 ### 2. Backend Setup (Laravel)
 
