@@ -167,23 +167,22 @@ class OrderController extends Controller
     }
     public function receive(Request $request)
     {
-        // 1. Ambil Server Key dari Config
         $serverKey = config('midtrans.server_key');
-
-        // 2. Buat String Gabungan (Concatenate)
-        // Hati-hati dengan gross_amount! Midtrans sering mengirim dengan desimal .00
-        // Contoh: "101" + "200" + "50000.00" + "SB-Mid-server-xxxx"
+    
+        // Explicitly cast or format if necessary, but using the request input directly is usually safest
+        // IF valid payload is sent.
         $hashedString = $request->order_id . $request->status_code . $request->gross_amount . $serverKey;
-
-        // 3. Lakukan Hashing SHA-512
+        
         $mySignature = hash('sha512', $hashedString);
-
-        // 4. Ambil Signature yang dikirim Midtrans
         $incomingSignature = $request->signature_key;
 
-        // 5. BANDINGKAN (Verifikasi)
+        // DEBUGGING: Log these to storage/logs/laravel.log to see the mismatch
+        \Log::info("Midtrans Callback Debug:");
+        \Log::info("My String to Hash: " . $hashedString);
+        \Log::info("My Signature: " . $mySignature);
+        \Log::info("Incoming Signature: " . $incomingSignature);
+
         if ($mySignature !== $incomingSignature) {
-            // JIKA TIDAK SAMA: Berarti ada yang memanipulasi data / Hacker
             return response()->json(['message' => 'Invalid Signature'], 403);
         }
 
