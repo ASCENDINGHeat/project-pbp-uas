@@ -61,7 +61,11 @@
 
     async function fetchOrdersData(token: string) {
         const orderRes = await fetch(`${PUBLIC_API_URL}/orders`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
         });
         if (orderRes.ok) {
             const data = await orderRes.json();
