@@ -2,7 +2,7 @@
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
     // Import selectedItemIds dari store
-    import { cart, selectedItemIds } from '$lib/stores/cart'; 
+    import { cart, selectedItemIds } from '$lib/stores/cart';
     import { PUBLIC_API_URL } from '$env/static/public';
 
     let cartItems: any[] = [];
@@ -89,7 +89,7 @@
 
         const oldQty = item.quantity;
         item.quantity = newQty;
-        cartItems = [...cartItems]; 
+        cartItems = [...cartItems];
 
         try {
             const token = localStorage.getItem('auth_token');
@@ -103,7 +103,7 @@
                 body: JSON.stringify({ quantity: newQty })
             });
             if (!res.ok) {
-                item.quantity = oldQty; 
+                item.quantity = oldQty;
                 cartItems = [...cartItems];
                 const err = await res.json();
                 alert(err.message || 'Gagal mengubah jumlah');
@@ -153,7 +153,7 @@
             await removeItem(item.id);
         }
         selectedIds = [];
-        selectedItemIds.set([]); 
+        selectedItemIds.set([]);
     }
 
     // --- PERBAIKAN UTAMA DISINI ---
@@ -175,87 +175,87 @@
     <title>Keranjang Belanja - PC Store</title>
 </svelte:head>
 
-<div class="breadcrumb-wrapper">
-    <div class="breadcrumb-pill">
-        <a class="breadcrumb-link" href="/web">Home</a>
-        <span class="breadcrumb-sep">›</span>
-        <span class="breadcrumb-current">Keranjang Belanja</span>
+<div class="w-[95%] mx-auto my-5 flex justify-start relative z-10">
+    <div class="inline-flex items-center gap-2.5 bg-slate-900 rounded-full px-6 py-2.5 text-sm font-medium shadow-sm border border-white/5 text-slate-400">
+        <a class="text-slate-400 no-underline cursor-pointer transition-colors duration-200 hover:text-white" href="/web">Home</a>
+        <span class="text-slate-600 text-xs">›</span>
+        <span class="text-[#ff0055] font-bold">Keranjang Belanja</span>
     </div>
 </div>
 
-<main class="category-page">
-    <div class="container">
-        <header class="header-section">
-            <h1>Keranjang Belanja</h1>
+<main class="bg-[#f7f7f7] min-h-screen">
+    <div class="max-w-[95%] mx-auto py-10 px-5">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-extrabold text-slate-800 mb-3">Keranjang Belanja</h1>
         </header>
 
         {#if loading}
-            <div class="loading-state">Memuat keranjang...</div>
+            <div class="py-10 text-center text-slate-500">Memuat keranjang...</div>
         {:else if cartItems.length === 0}
-            <section class="empty-state">
-                <div class="empty-icon">🛒</div>
-                <h2>Keranjang Anda Kosong</h2>
-                <button class="btn-continue" on:click={() => goto('/web')}>Lanjut Belanja</button>
+            <section class="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm text-center">
+                <div class="text-6xl mb-5">🛒</div>
+                <h2 class="text-3xl font-extrabold text-slate-800 mb-3">Keranjang Anda Kosong</h2>
+                <button class="px-7 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-none rounded-lg font-bold cursor-pointer transition-all hover:opacity-90" on:click={() => goto('/web')}>Lanjut Belanja</button>
             </section>
         {:else}
-            <section class="cart-list">
-                <div class="cart-header-actions">
-                    <label class="checkbox-container select-all">
+            <section class="flex flex-col gap-6 bg-white rounded-xl shadow-sm p-10 mb-8 max-md:p-5">
+                <div class="flex justify-between items-center pb-4 border-b-2 border-slate-100 max-md:flex-col max-md:items-start max-md:gap-4">
+                    <label class="flex items-center h-5 cursor-pointer text-base font-semibold text-slate-700 select-none">
                         <input type="checkbox" 
+                            class="w-5 h-5 mr-3 accent-indigo-600 cursor-pointer rounded border-slate-300"
                             checked={cartItems.length > 0 && selectedIds.length === cartItems.length} 
                             on:change={toggleAll} 
                         />
-                        <span class="checkmark"></span>
                         Pilih Semua ({cartItems.length})
                     </label>
-                    <button class="btn-clear-text" on:click={clearAll}>Hapus Semua</button>
+                    <button class="bg-none border-none text-red-500 font-semibold cursor-pointer hover:text-red-700" on:click={clearAll}>Hapus Semua</button>
                 </div>
 
                 {#each cartItems as item (item.id)}
-                    <div class="cart-item {selectedIds.includes(item.id) ? 'selected' : ''}">
+                    <div class="flex items-center gap-4 border-b border-gray-200 pb-6 p-4 rounded-lg transition-colors max-md:flex-wrap max-md:justify-center {selectedIds.includes(item.id) ? 'bg-slate-50 border border-slate-200' : ''}">
                         
-                        <div class="item-checkbox">
-                            <label class="checkbox-container">
+                        <div class="flex items-center justify-center">
+                            <label class="block relative cursor-pointer select-none">
                                 <input type="checkbox" 
+                                    class="w-5 h-5 accent-indigo-600 cursor-pointer rounded border-slate-300"
                                     checked={selectedIds.includes(item.id)} 
                                     on:change={() => toggleItem(item.id)} 
                                 />
-                                <span class="checkmark"></span>
                             </label>
                         </div>
 
-                        <img src={item.image || '/images/placeholder.png'} alt={item.name} class="cart-item-img" />
+                        <img src={item.image || '/images/placeholder.png'} alt={item.name} class="w-[100px] h-[100px] object-cover rounded-lg border border-gray-100 max-md:w-[70px] max-md:h-[70px]" />
                         
-                        <div class="cart-item-info">
-                            <h3>{item.name}</h3>
-                            <div class="price-tag">{formatCurrency(Number(item.price))}</div>
+                        <div class="flex-1 flex flex-col gap-2 max-md:min-w-[50%]">
+                            <h3 class="m-0 text-lg text-slate-800 leading-snug font-semibold">{item.name}</h3>
+                            <div class="font-semibold text-indigo-600 text-base">{formatCurrency(Number(item.price))}</div>
                             
-                            <div class="quantity-control">
-                                <button class="qty-btn" on:click={() => updateQuantity(item, -1)} disabled={item.quantity <= 1}>−</button>
-                                <span class="qty-val">{item.quantity}</span>
-                                <button class="qty-btn" on:click={() => updateQuantity(item, 1)} disabled={item.stock !== undefined && item.quantity >= item.stock}>+</button>
+                            <div class="flex items-center gap-2.5 mt-1">
+                                <button class="w-8 h-8 rounded-md border border-gray-300 bg-slate-50 text-slate-700 font-bold cursor-pointer flex items-center justify-center hover:bg-white disabled:opacity-50" on:click={() => updateQuantity(item, -1)} disabled={item.quantity <= 1}>−</button>
+                                <span class="font-bold w-8 text-center text-slate-800">{item.quantity}</span>
+                                <button class="w-8 h-8 rounded-md border border-gray-300 bg-slate-50 text-slate-700 font-bold cursor-pointer flex items-center justify-center hover:bg-white disabled:opacity-50" on:click={() => updateQuantity(item, 1)} disabled={item.stock !== undefined && item.quantity >= item.stock}>+</button>
                             </div>
                             {#if item.stock !== undefined}
-                                <div class="stock-info">Stok: {item.stock}</div>
+                                <div class="text-xs text-slate-400 italic mt-1">Stok: {item.stock}</div>
                             {/if}
                         </div>
 
-                        <div class="cart-item-actions">
-                            <div class="item-total">
+                        <div class="flex flex-col items-end gap-2.5 min-w-[120px] max-md:w-full max-md:flex-row max-md:justify-between max-md:items-center max-md:border-t max-md:border-gray-100 max-md:pt-3">
+                            <div class="text-lg font-extrabold text-slate-800">
                                 {formatCurrency(Number(item.price) * item.quantity)}
                             </div>
-                            <button class="btn-remove" on:click={() => removeItem(item.id)}>Hapus</button>
+                            <button class="px-3 py-1.5 bg-transparent border border-red-500 text-red-500 rounded-md cursor-pointer font-semibold text-sm hover:bg-red-50" on:click={() => removeItem(item.id)}>Hapus</button>
                         </div>
                     </div>
                 {/each}
 
-                <div class="cart-actions-footer">
-                    <div class="cart-total">
+                <div class="flex items-center justify-between mt-4 gap-4 border-t-2 border-dashed border-slate-100 pt-6 max-md:flex-col max-md:items-start">
+                    <div class="text-xl text-gray-900">
                         Total ({selectedIds.length} Barang): <strong>{formatCurrency(total)}</strong>
                     </div>
-                    <div class="cart-buttons">
-                        <button class="btn-continue" on:click={() => goto('/web')}>+ Produk</button>
-                        <button class="btn-checkout" on:click={handleCheckout} disabled={selectedIds.length === 0}>
+                    <div class="flex gap-3 items-center max-md:w-full">
+                        <button class="px-7 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white border-none rounded-lg font-bold cursor-pointer transition-all hover:opacity-90 max-md:flex-1" on:click={() => goto('/web')}>+ Produk</button>
+                        <button class="px-7 py-3 bg-slate-900 text-white border-none rounded-lg font-bold cursor-pointer transition-all inline-flex items-center gap-2 hover:bg-slate-800 disabled:bg-gray-300 disabled:cursor-not-allowed max-md:flex-1 justify-center" on:click={handleCheckout} disabled={selectedIds.length === 0}>
                             Checkout
                         </button>
                     </div>
@@ -264,61 +264,3 @@
         {/if}
     </div>
 </main>
-
-<style>
-    .cart-header-actions { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid #f1f5f9; }
-    .btn-clear-text { background: none; border: none; color: #ef4444; font-weight: 600; cursor: pointer; }
-    .cart-item { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 24px; transition: background 0.2s; padding: 15px; border-radius: 8px; }
-    .cart-item.selected { background-color: #f8fafc; border: 1px solid #e2e8f0; }
-    .item-checkbox { display: flex; align-items: center; justify-content: center; }
-    .checkbox-container { display: block; position: relative; padding-left: 30px; margin-bottom: 0; cursor: pointer; font-size: 1rem; user-select: none; font-weight: 600; color: #334155; }
-    .checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
-    .checkmark { position: absolute; top: -2px; left: 0; height: 22px; width: 22px; background-color: #fff; border: 2px solid #cbd5e1; border-radius: 6px; }
-    .checkbox-container:hover input ~ .checkmark { background-color: #f1f5f9; }
-    .checkbox-container input:checked ~ .checkmark { background-color: #4f46e5; border-color: #4f46e5; }
-    .checkmark:after { content: ""; position: absolute; display: none; }
-    .checkbox-container input:checked ~ .checkmark:after { display: block; }
-    .checkbox-container .checkmark:after { left: 7px; top: 3px; width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
-    .select-all { display: flex; align-items: center; height: 20px; } 
-    .breadcrumb-wrapper { width: 95%; margin: 20px auto; padding: 0; display: flex; justify-content: flex-start; position: relative; z-index: 1; }
-    .breadcrumb-pill { display: inline-flex; align-items: center; gap: 10px; background-color: #0f172a; border-radius: 50px; padding: 10px 24px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05); }
-    .breadcrumb-link { color: #94a3b8; text-decoration: none; cursor: pointer; transition: color 0.2s; }
-    .breadcrumb-link:hover { color: #fff; }
-    .breadcrumb-sep { color: #475569; font-size: 0.8rem; }
-    .breadcrumb-current { color: #ff0055; font-weight: 700; }
-    .category-page { background: #f7f7f7; min-height: 100vh; }
-    .container { max-width: 95%; margin: 0 auto; padding: 40px 20px; }
-    .header-section { margin-bottom: 40px; text-align: center; }
-    .header-section h1 { font-size: 2.5rem; font-weight: 800; color: #1f2d3d; margin: 0 0 12px; }
-    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
-    .empty-icon { font-size: 4rem; margin-bottom: 20px; }
-    .empty-state h2 { font-size: 1.8rem; font-weight: 800; color: #1f2d3d; margin: 0 0 12px; }
-    .btn-continue { padding: 12px 28px; background: linear-gradient(90deg, #7c3aed, #4f46e5); color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-    .btn-checkout { padding: 12px 28px; background: #0f172a; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-    .btn-checkout:disabled { background: #ccc; cursor: not-allowed; }
-    .cart-list { display: flex; flex-direction: column; gap: 24px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 40px 20px; margin-bottom: 32px; }
-    .cart-item-img { width: 100px; height: 100px; object-fit: cover; border-radius: 10px; border: 1px solid #eee; }
-    .cart-item-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-    .cart-item-info h3 { margin: 0; font-size: 1.1rem; color: #1f2d3d; line-height: 1.4; }
-    .price-tag { font-weight: 600; color: #4f46e5; font-size: 1rem; }
-    .quantity-control { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
-    .qty-btn { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #d1d5db; background: #f8fafc; color: #334155; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .qty-val { font-weight: 700; width: 30px; text-align: center; color: #1e293b; }
-    .stock-info { font-size: 0.8rem; color: #94a3b8; font-style: italic; margin-top: 5px; }
-    .cart-item-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 120px; }
-    .item-total { font-size: 1.1rem; font-weight: 800; color: #1f2d3d; }
-    .btn-remove { padding: 6px 12px; background: transparent; border: 1px solid #ef4444; color: #ef4444; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
-    .cart-actions-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; gap: 16px; border-top: 2px dashed #f1f5f9; padding-top: 24px; }
-    .cart-total { font-size: 1.25rem; color: #111827; }
-    .cart-buttons { display:flex; gap:12px; align-items: center; }
-    .loading-state { padding: 40px; text-align: center; color: #64748b; }
-    @media (max-width: 768px) {
-        .cart-item { flex-direction: row; flex-wrap: wrap; }
-        .cart-item-img { width: 70px; height: 70px; }
-        .cart-item-info { min-width: 50%; }
-        .cart-item-actions { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
-        .cart-actions-footer { flex-direction: column; align-items: flex-start; gap: 15px; }
-        .cart-buttons { width: 100%; }
-        .btn-checkout { width: 100%; justify-content: center; }
-    }
-</style>

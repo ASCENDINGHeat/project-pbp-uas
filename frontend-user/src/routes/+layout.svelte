@@ -1,15 +1,18 @@
 <script lang="ts">
+    // --- IMPORT CSS GLOBAL (WAJIB UNTUK TAILWIND) ---
+    import './layout.css'; 
+
 	import { page } from '$app/stores';
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
-	import { onMount } from 'svelte';
+    import { onMount } from 'svelte';
     import { isLoggedIn } from '$lib/stores/auth';
     import { user } from '$lib/stores/user';
     import { cart } from '$lib/stores/cart';
-    import { get } from 'svelte/store'; // [PENTING] Tambahkan import ini
+    import { get } from 'svelte/store';
     import { PUBLIC_API_URL, PUBLIC_STORAGE_URL } from '$env/static/public';
 
-	$: showHeaderFooter = $page?.url?.pathname && $page.url.pathname !== '/';
+    $: showHeaderFooter = $page?.url?.pathname && $page.url.pathname !== '/';
 
     async function initGlobalData() {
         const token = localStorage.getItem('auth_token');
@@ -23,9 +26,7 @@
 
 	async function fetchUser(token: string) {
         // [SOLUSI UTAMA] Cek apakah data user sudah ada di store
-        // Jika data user sudah ada (misal dari localStorage), return saja.
-        // Ini mencegah fetch berulang-ulang setiap pindah halaman/refresh.
-        if (get(user)) return; 
+        if (get(user)) return;
 
         try {
             const res = await fetch(`${PUBLIC_API_URL}/user`, {
@@ -41,13 +42,11 @@
                 
                 // Handle URL Avatar
                 if (userData.avatar && !userData.avatar.startsWith('http')) {
-                    const baseUrl = PUBLIC_STORAGE_URL.endsWith('/') ?
-                        PUBLIC_STORAGE_URL : `${PUBLIC_STORAGE_URL}/`;
+                    const baseUrl = PUBLIC_STORAGE_URL.endsWith('/') ? PUBLIC_STORAGE_URL : `${PUBLIC_STORAGE_URL}/`;
                     userData.avatar = `${baseUrl}storage/${userData.avatar}`;
                 }
 
                 // SIMPAN KE STORE 
-                // (Ini akan otomatis men-trigger subscription di user.ts untuk update localStorage)
                 user.set({
                     id: userData.id,
                     name: userData.name,
@@ -69,10 +68,8 @@
         }
     });
 
-    // ... sisa kode fetchCart dan lainnya tetap sama ...
     async function fetchCart(token: string) {
         try {
-            // Note: Cart sebaiknya tetap di-fetch agar stok/harga selalu update
             const res = await fetch(`${PUBLIC_API_URL}/cart`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -108,11 +105,7 @@
 {/if}
 
 <style>
-    /* Style tetap sama persis seperti sebelumnya */
-	:global(*) {
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-	}
-
+    /* Global Styles can be removed here if moved to layout.css or handled by Tailwind */
 	:global(html), :global(body) {
 		margin: 0;
 		padding: 0;
@@ -121,6 +114,7 @@
 		overflow-y: auto !important;
 		overflow-x: hidden;
 		font-family: 'Segoe UI', sans-serif;
+        /* Background color is now handled in layout.css, but okay to keep as fallback */
 		background-color: #ffffff;
 		scroll-behavior: smooth;
 		-webkit-font-smoothing: antialiased;

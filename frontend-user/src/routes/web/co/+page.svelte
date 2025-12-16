@@ -3,7 +3,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { cart, selectedItemIds } from '$lib/stores/cart'; 
     // Import store user
-    import { user } from '$lib/stores/auth'; 
+    import { user } from '$lib/stores/auth';
     import { PUBLIC_API_URL } from '$env/static/public';
 
     // --- 1. Filter Item: Hanya ambil yang ID-nya ada di selectedItemIds ---
@@ -30,7 +30,7 @@
     function formatRupiah(number: number) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
     }
-
+    
     // --- 4. Fetch Data User (JIKA STORE KOSONG) ---
     async function fetchUserProfile() {
         const token = localStorage.getItem('auth_token');
@@ -57,14 +57,14 @@
     }
 
     // --- 5. Handle Checkout ---
-    async function handleCheckout() {
+    async function handleCheckout() { 
         if (cartItems.length === 0) {
             alert("Error: Tidak ada item yang dipilih.");
             goto('/web/cart');
             return;
         }
 
-        isLoading = true;
+        isLoading = true; 
         errorMessage = "";
 
         try {
@@ -133,40 +133,40 @@
     });
 </script>
 
-<div class="overlay">
-    <div class="checkout-container">
-        <div class="checkout-card">
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[9999] p-5">
+    <div class="w-full max-w-[500px] max-h-[85vh] flex">
+        <div class="bg-white w-full rounded-2xl flex flex-col overflow-hidden shadow-2xl">
             
-            <div class="card-header">
-                <h1>Konfirmasi Pesanan</h1>
-                <button class="close-btn" on:click={() => goto('/web/cart')}>&times;</button>
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-white">
+                <h1 class="m-0 text-lg text-gray-800 font-bold">Konfirmasi Pesanan</h1>
+                <button class="bg-none border-none text-2xl cursor-pointer text-gray-400 hover:text-gray-600" on:click={() => goto('/web/cart')}>&times;</button>
             </div>
 
-            <div class="card-body">
+            <div class="flex-1 overflow-y-auto p-5 bg-gray-50">
                 {#if errorMessage}
-                    <div class="alert-error">{errorMessage}</div>
+                    <div class="bg-red-100 text-red-500 p-3 rounded-lg mb-4 text-sm border border-red-200">{errorMessage}</div>
                 {/if}
 
-                <div class="section-box">
-                    <h3>Informasi Pembeli</h3>
-                    <p class="buyer-name">{buyerInfo.name} <span class="badge">User</span></p>
-                    <p class="buyer-phone">{buyerInfo.email}</p>
-                    <p class="buyer-address" style="color: #666; font-style: italic; font-size: 0.85rem; margin-top:5px;">
+                <div class="bg-white p-4 rounded-xl mb-4 border border-gray-100 shadow-sm">
+                    <h3 class="m-0 mb-3 text-sm text-slate-500 font-bold uppercase tracking-wide">Informasi Pembeli</h3>
+                    <p class="font-semibold text-gray-800 m-0 mb-1">{buyerInfo.name} <span class="bg-green-100 text-green-700 text-xs px-1.5 py-0.5 rounded ml-1">User</span></p>
+                    <p class="text-sm text-gray-500 m-0 mb-1">{buyerInfo.email}</p>
+                    <p class="text-xs text-gray-400 italic m-0 mt-1">
                         (Alamat diambil dari profil pengguna)
                     </p>
                 </div>
 
-                <div class="section-box">
-                    <h3>Daftar Produk ({cartItems.length} Item)</h3>
-                    <div class="item-list">
+                <div class="bg-white p-4 rounded-xl mb-4 border border-gray-100 shadow-sm">
+                    <h3 class="m-0 mb-3 text-sm text-slate-500 font-bold uppercase tracking-wide">Daftar Produk ({cartItems.length} Item)</h3>
+                    <div class="flex flex-col">
                         {#each cartItems as item}
-                            <div class="item-row">
-                                <img src={item.image || '/images/placeholder.png'} alt={item.name} class="item-img" />
-                                <div class="item-info">
-                                    <span class="item-name">{item.name}</span>
-                                    <span class="item-meta">{item.quantity} x {formatRupiah(Number(item.price))}</span>
+                            <div class="flex gap-3 mb-3 pb-3 border-b border-gray-50 last:mb-0 last:pb-0 last:border-none">
+                                <img src={item.image || '/images/placeholder.png'} alt={item.name} class="w-[50px] h-[50px] rounded-lg object-cover bg-gray-100 border border-gray-100" />
+                                <div class="flex-1 flex flex-col justify-center">
+                                    <span class="text-sm font-semibold text-gray-800 overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px]">{item.name}</span>
+                                    <span class="text-xs text-gray-400 mt-1">{item.quantity} x {formatRupiah(Number(item.price))}</span>
                                 </div>
-                                <div class="item-total">
+                                <div class="font-semibold text-gray-800 text-sm self-center">
                                     {formatRupiah(Number(item.price) * item.quantity)}
                                 </div>
                             </div>
@@ -174,35 +174,35 @@
                     </div>
                 </div>
 
-                <div class="summary-section">
-                    <div class="summary-row">
+                <div class="mt-2.5 px-1">
+                    <div class="flex justify-between mb-2 text-sm text-gray-500">
                         <span>Subtotal Produk</span>
                         <span>{formatRupiah(subTotal)}</span>
                     </div>
-                    <div class="summary-row">
+                    <div class="flex justify-between mb-2 text-sm text-gray-500">
                         <span>Biaya Layanan (Admin)</span>
                         <span>{formatRupiah(adminFee)}</span>
                     </div>
-                    <div class="summary-row total">
+                    <div class="flex justify-between mt-3 pt-3 border-t border-dashed border-gray-300 font-bold text-gray-800 text-lg">
                         <span>Total Tagihan</span>
-                        <span class="total-price">{formatRupiah(grandTotal)}</span>
+                        <span class="text-violet-600">{formatRupiah(grandTotal)}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="card-footer">
+            <div class="p-5 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                 {#if paymentUrl}
-                    <div class="payment-ready">
-                        <p>✅ Pesanan Dibuat!</p>
-                        <a href={paymentUrl} target="_blank" class="btn-midtrans">
+                    <div class="text-center">
+                        <p class="m-0 mb-4 text-green-600 font-bold text-lg">✅ Pesanan Dibuat!</p>
+                        <a href={paymentUrl} target="_blank" class="block w-full p-4 bg-green-600 text-white text-center no-underline rounded-xl font-bold mb-2.5 hover:bg-green-700">
                             Lanjut ke Pembayaran &rarr;
                         </a>
-                        <button class="btn-cancel" on:click={() => paymentUrl = ""}>Kembali</button>
+                        <button class="w-full p-2.5 bg-transparent border border-gray-200 text-gray-500 rounded-xl cursor-pointer font-semibold hover:bg-gray-50" on:click={() => paymentUrl = ""}>Kembali</button>
                     </div>
                 {:else}
-                    <button class="btn-pay" on:click={handleCheckout} disabled={isLoading}>
+                    <button class="w-full p-4 bg-violet-600 text-white border-none rounded-xl text-base font-bold cursor-pointer flex justify-center items-center gap-2.5 transition-colors hover:bg-violet-700 disabled:bg-gray-300 disabled:cursor-not-allowed" on:click={handleCheckout} disabled={isLoading}>
                         {#if isLoading}
-                            <span class="loader"></span> Memproses...
+                            <span class="w-[18px] h-[18px] border-[3px] border-white/30 border-t-white rounded-full animate-spin"></span> Memproses...
                         {:else}
                             Bayar Sekarang ({formatRupiah(grandTotal)})
                         {/if}
@@ -213,59 +213,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    /* Global & Layout */
-    :global(body) { margin: 0; font-family: 'Segoe UI', sans-serif; }
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
-    
-    .checkout-container { width: 100%; max-width: 500px; max-height: 85vh; display: flex; }
-    .checkout-card { background: white; width: 100%; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -5px 30px rgba(0,0,0,0.2); }
-
-    /* Header */
-    .card-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
-    .card-header h1 { margin: 0; font-size: 1.1rem; color: #333; font-weight: 700; }
-    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #888; }
-
-    /* Body */
-    .card-body { flex: 1; overflow-y: auto; padding: 20px; background: #f8f9fa; }
-    .alert-error { background-color: #fee2e2; color: #ef4444; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; border: 1px solid #fca5a5; }
-    .section-box { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #eaeaea; }
-    h3 { margin: 0 0 12px 0; font-size: 0.85rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    /* User Info */
-    .buyer-name { font-weight: 600; color: #333; margin: 0 0 4px; }
-    .buyer-phone { font-size: 0.9rem; color: #666; margin: 0 0 4px; }
-    .badge { background: #dff0d8; color: #3c763d; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
-
-    /* Items */
-    .item-row { display: flex; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; }
-    .item-row:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-    .item-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #eee; border: 1px solid #eee; }
-    .item-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-    .item-name { font-size: 0.9rem; font-weight: 600; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
-    .item-meta { font-size: 0.8rem; color: #888; margin-top: 4px; }
-    .item-total { font-weight: 600; color: #333; font-size: 0.9rem; align-self: center; }
-
-    /* Summary */
-    .summary-section { margin-top: 10px; padding: 0 5px; }
-    .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #666; }
-    .summary-row.total { border-top: 1px dashed #ccc; padding-top: 12px; margin-top: 12px; font-weight: 700; color: #333; font-size: 1.1rem; }
-    .total-price { color: #8E42E1; }
-
-    /* Footer */
-    .card-footer { padding: 20px; background: #fff; border-top: 1px solid #eee; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); }
-    .btn-pay { width: 100%; padding: 16px; background: #8E42E1; color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; transition: background 0.2s; }
-    .btn-pay:hover { background: #7b3bcc; }
-    .btn-pay:disabled { background: #ccc; cursor: not-allowed; }
-
-    /* Midtrans State */
-    .payment-ready p { text-align: center; margin: 0 0 15px; color: #28a745; font-weight: 700; font-size: 1.1rem; }
-    .btn-midtrans { display: block; width: 100%; padding: 16px; background: #28a745; color: white; text-align: center; text-decoration: none; border-radius: 10px; font-weight: 700; margin-bottom: 10px; box-sizing: border-box; }
-    .btn-midtrans:hover { background: #218838; }
-    .btn-cancel { width: 100%; padding: 10px; background: transparent; border: 1px solid #ddd; color: #666; border-radius: 10px; cursor: pointer; font-weight: 600; }
-
-    /* Loader */
-    .loader { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid white; width: 18px; height: 18px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-</style>

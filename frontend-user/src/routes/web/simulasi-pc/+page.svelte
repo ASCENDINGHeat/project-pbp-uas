@@ -289,44 +289,45 @@
     <title>Simulasi PC - PC Store</title>
 </svelte:head>
 
-<div class="breadcrumb-wrapper">
-    <div class="breadcrumb-pill">
-        <a class="breadcrumb-link" href="/web">Home</a>
-        <span class="breadcrumb-sep">›</span>
-        <span class="breadcrumb-current">Simulasi PC</span>
+<div class="w-[95%] mx-auto my-5 flex justify-start relative z-10">
+    <div class="inline-flex items-center gap-2.5 bg-slate-900 rounded-full px-6 py-2.5 text-sm font-medium shadow-sm border border-white/5 text-slate-400">
+        <a class="text-slate-400 no-underline cursor-pointer transition-colors duration-200 hover:text-white" href="/web">Home</a>
+        <span class="text-slate-600 text-xs">›</span>
+        <span class="text-[#ff0055] font-bold">Simulasi PC</span>
     </div>
 </div>
 
-<main class="category-page">
-    <div class="container">
-        <header class="header-section">
-            <h1>Simulasi PC</h1>
-            <p class="subtitle">Kustomisasi PC sesuai kebutuhan Anda dengan komponen pilihan</p>
+<main class="bg-[#f7f7f7] min-h-screen font-sans text-base text-gray-800">
+    <div class="max-w-[95%] mx-auto py-10 px-5 pb-24">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-slate-800 mb-3">Simulasi PC</h1>
+            <p class="text-lg text-slate-500 m-0">Kustomisasi PC sesuai kebutuhan Anda dengan komponen pilihan</p>
         </header>
 
-        <section class="simulation-wrapper">
-            <aside class="sidebar">
-                <div class="sidebar-section-title">Komponen Utama</div>
-                <div class="nav-list">
+        <section class="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-7">
+            <aside class="bg-white p-5 rounded-xl border border-gray-200 h-fit sticky top-5 z-10 lg:static mb-5 lg:mb-0">
+                <div class="text-base font-bold text-slate-500 mb-3 ml-1 tracking-wide">Komponen Utama</div>
+                <div class="flex flex-col gap-2">
                     {#each hardwareData.filter(c => c.group === 'Utama') as cat}
                         <button 
-                            class="nav-item" 
-                            class:active={activeCategory === cat.id}
-                            class:filled={selectionMap[cat.id] !== null}
+                            class="flex items-center gap-3.5 bg-white border border-slate-200 p-3.5 rounded-lg cursor-pointer transition-all text-left relative overflow-hidden hover:bg-slate-50 hover:border-slate-300
+                            {activeCategory === cat.id ? '!bg-blue-50 !border-blue-200 border-l-[5px] !border-l-red-600 pl-[11px]' : ''}"
                             on:click={() => changeCategory(cat.id)}
                         >
-                            <div class="nav-icon-box">
+                            <div class="w-[42px] h-[42px] flex items-center justify-center rounded-lg 
+                                {selectionMap[cat.id] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}
+                                {activeCategory === cat.id && !selectionMap[cat.id] ? '!bg-blue-100 !text-blue-600' : ''}">
                                 {#if selectionMap[cat.id]}
-                                    <span class="check-icon">✓</span>
+                                    <span class="font-bold">✓</span>
                                 {:else}
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                         <path d={cat.iconPath} />
                                     </svg>
                                 {/if}
                             </div>
-                            <div class="nav-text">
-                                <div class="nav-label">{cat.label}</div>
-                                <div class="nav-sublabel">
+                            <div class="flex-1 overflow-hidden">
+                                <div class="font-bold text-lg text-slate-700">{cat.label}</div>
+                                <div class="text-sm text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis">
                                     {selectionMap[cat.id] ? (selectionMap[cat.id]?.name.substring(0, 30) + '...') : cat.subLabel}
                                 </div>
                             </div>
@@ -334,27 +335,28 @@
                     {/each}
                 </div>
 
-                <div class="sidebar-section-title mt-4">Komponen Tambahan</div>
-                <div class="nav-list">
+                <div class="text-base font-bold text-slate-500 mb-3 ml-1 tracking-wide mt-6 pt-4 border-t border-slate-100">Komponen Tambahan</div>
+                <div class="flex flex-col gap-2">
                     {#each hardwareData.filter(c => c.group === 'Tambahan') as cat}
                         <button 
-                            class="nav-item" 
-                            class:active={activeCategory === cat.id}
-                            class:filled={selectionMap[cat.id] !== null}
+                            class="flex items-center gap-3.5 bg-white border border-slate-200 p-3.5 rounded-lg cursor-pointer transition-all text-left relative overflow-hidden hover:bg-slate-50 hover:border-slate-300
+                            {activeCategory === cat.id ? '!bg-blue-50 !border-blue-200 border-l-[5px] !border-l-red-600 pl-[11px]' : ''}"
                             on:click={() => changeCategory(cat.id)}
                         >
-                            <div class="nav-icon-box">
+                            <div class="w-[42px] h-[42px] flex items-center justify-center rounded-lg 
+                                {selectionMap[cat.id] ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}
+                                {activeCategory === cat.id && !selectionMap[cat.id] ? '!bg-blue-100 !text-blue-600' : ''}">
                                 {#if selectionMap[cat.id]}
-                                    <span class="check-icon">✓</span>
+                                    <span class="font-bold">✓</span>
                                 {:else}
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                         <path d={cat.iconPath} />
                                     </svg>
                                 {/if}
                             </div>
-                            <div class="nav-text">
-                                <div class="nav-label">{cat.label}</div>
-                                <div class="nav-sublabel">
+                            <div class="flex-1 overflow-hidden">
+                                <div class="font-bold text-lg text-slate-700">{cat.label}</div>
+                                <div class="text-sm text-slate-400 whitespace-nowrap overflow-hidden text-ellipsis">
                                     {selectionMap[cat.id] ? (selectionMap[cat.id]?.name.substring(0, 30) + '...') : cat.subLabel}
                                 </div>
                             </div>
@@ -363,28 +365,28 @@
                 </div>
             </aside>
 
-            <main class="content-panel">
-                <div class="content-header">
-                    <h2>{currentCategoryData?.label}</h2>
-                    <div class="filter-controls">
-                        <div class="search-wrapper">
+            <main class="bg-white p-7 rounded-xl border border-gray-200">
+                <div class="mb-6">
+                    <h2 class="m-0 mb-4 text-3xl font-extrabold text-slate-900">{currentCategoryData?.label}</h2>
+                    <div class="flex gap-4 w-full items-center flex-wrap max-sm:flex-col max-sm:items-stretch">
+                        <div class="flex-1 min-w-[250px]">
                             <input 
                                 type="text" 
                                 placeholder="Cari komponen..." 
                                 bind:value={searchQuery} 
-                                class="search-input" 
+                                class="w-full p-3 border border-slate-300 rounded-lg bg-slate-50 text-base focus:outline-none focus:border-blue-500 focus:bg-white" 
                             />
                         </div>
                         
-                        <div class="select-group">
-                            <select bind:value={brandFilter} class="light-select" aria-label="Filter Brand">
+                        <div class="flex gap-3 max-sm:w-full">
+                            <select bind:value={brandFilter} class="p-3 border border-slate-300 rounded-lg bg-white text-base cursor-pointer min-w-[160px] flex-1">
                                 <option value="ALL">Semua Brand</option>
                                 {#each availableBrands as b}
                                     <option value={b.toUpperCase()}>{b}</option>
                                 {/each}
                             </select>
 
-                            <select bind:value={sortOrder} class="light-select">
+                            <select bind:value={sortOrder} class="p-3 border border-slate-300 rounded-lg bg-white text-base cursor-pointer flex-1">
                                 <option value="price-asc">Harga Terendah</option>
                                 <option value="price-desc">Harga Tertinggi</option>
                             </select>
@@ -393,21 +395,21 @@
                 </div>
 
                 {#if activeCategory === 'motherboard' && selectionMap.processor}
-                    <div class="compatibility-alert">
+                    <div class="bg-emerald-50 text-emerald-800 p-3.5 rounded-lg mb-5 border border-emerald-200 text-base">
                         ℹ️ Menampilkan motherboard yang kompatibel dengan <strong>{selectionMap.processor.name}</strong> ({selectionMap.processor.specs})
                     </div>
                 {/if}
                 {#if activeCategory === 'ram' && selectionMap.motherboard}
-                    <div class="compatibility-alert">
+                    <div class="bg-emerald-50 text-emerald-800 p-3.5 rounded-lg mb-5 border border-emerald-200 text-base">
                         ℹ️ Menampilkan RAM yang kompatibel dengan <strong>{selectionMap.motherboard.name}</strong> ({selectionMap.motherboard.specs})
                     </div>
                 {/if}
 
-                <div class="product-list">
+                <div class="flex flex-col gap-4">
                     {#if isLoading}
-                        <div class="empty-state">Memuat data produk...</div>
+                        <div class="text-center py-12 text-slate-400 text-lg">Memuat data produk...</div>
                     {:else if filteredProducts.length === 0}
-                        <div class="empty-state">
+                        <div class="text-center py-12 text-slate-400 text-lg">
                             <p>Tidak ada produk ditemukan.</p>
                             {#if activeCategory === 'motherboard' && selectionMap.processor}
                                 <small>Coba ganti Processor lain untuk melihat motherboard tipe berbeda.</small>
@@ -416,35 +418,35 @@
                     {:else}
                         {#each filteredProducts as product}
                             <div
-                                class="product-card"
-                                class:selected={selectionMap[activeCategory]?.id === product.id}
+                                class="flex items-center gap-5 bg-white border border-slate-200 p-5 rounded-lg transition-all hover:border-slate-300 hover:shadow-sm cursor-pointer
+                                {selectionMap[activeCategory]?.id === product.id ? '!border-red-500 !bg-red-50' : ''}"
                                 role="button"
                                 tabindex="0"
                                 on:click={() => openProduct(product)}
                             >
-                                <div class="prod-img">
+                                <div class="text-4xl flex items-center justify-center w-[60px]">
                                     {#if product.imagePlaceholder && product.imagePlaceholder !== '/images/placeholder.png'}
-                                        <img src={product.imagePlaceholder} alt="" style="width:50px; height:50px; object-fit:contain;">
+                                        <img src={product.imagePlaceholder} alt="" class="w-[50px] h-[50px] object-contain">
                                     {:else}
                                         📦
                                     {/if}
                                 </div>
-                                <div class="prod-info">
-                                    <div class="prod-name">{product.name}</div>
-                                    <div class="prod-specs">
+                                <div class="flex-1">
+                                    <div class="font-bold text-xl text-slate-800 mb-1.5">{product.name}</div>
+                                    <div class="text-base text-slate-500 flex gap-3">
                                         {#if product.brand !== 'Generic'}
-                                            <span class="brand-badge">{product.brand}</span>
+                                            <span class="font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded text-sm">{product.brand}</span>
                                         {/if}
                                         <span>{product.specs}</span>
                                     </div>
                                 </div>
-                                <div class="prod-action">
+                                <div class="flex flex-col items-end gap-2.5 min-w-[120px]">
                                     {#if selectionMap[activeCategory]?.id === product.id}
-                                        <button class="btn-select remove" on:click|stopPropagation={() => selectProduct(product)}>Remove</button>
+                                        <button class="px-6 py-2.5 border border-red-500 bg-red-500 text-white rounded-lg font-semibold text-base cursor-pointer transition-all hover:bg-red-600" on:click|stopPropagation={() => selectProduct(product)}>Remove</button>
                                     {:else}
-                                        <button class="btn-select" on:click|stopPropagation={() => selectProduct(product)}>Select</button>
+                                        <button class="px-6 py-2.5 border border-slate-300 bg-white rounded-lg font-semibold text-base cursor-pointer transition-all hover:bg-slate-100 hover:border-slate-400" on:click|stopPropagation={() => selectProduct(product)}>Select</button>
                                     {/if}
-                                    <div class="prod-price">{formatRupiah(product.price)}</div>
+                                    <div class="font-bold text-blue-600 text-xl">{formatRupiah(product.price)}</div>
                                 </div>
                             </div>
                         {/each}
@@ -456,226 +458,67 @@
 </main>
 
 {#if totalItems > 0}
-    <div class="floating-dock-container">
+    <div class="fixed bottom-8 left-0 w-full flex justify-center items-end z-[100] pointer-events-none max-md:bottom-2">
         {#if showSummary}
-            <div class="dock-backdrop" on:click={() => showSummary = false} transition:fly={{ duration: 200 }}></div>
-        {/if}
-
-        {#if showSummary}
-            <div class="summary-popup" transition:fly={{ y: 50, duration: 300 }}>
-                <div class="summary-header">
-                    <h3>Rincian Rakitan Anda</h3>
-                    <button class="btn-close-summary" on:click={() => showSummary = false}>✕</button>
+            <div class="fixed top-0 left-0 w-full h-full bg-black/20 pointer-events-auto z-[101]" on:click={() => showSummary = false} transition:fly={{ duration: 200 }}></div>
+            <div class="absolute bottom-[85px] bg-white w-[400px] max-w-[90vw] rounded-xl shadow-xl border border-slate-200 pointer-events-auto z-[102] flex flex-col overflow-hidden max-md:bottom-5 max-md:w-[95%]">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                    <h3 class="m-0 text-base text-slate-700">Rincian Rakitan Anda</h3>
+                    <button class="bg-none border-none text-xl cursor-pointer text-slate-400" on:click={() => showSummary = false}>✕</button>
                 </div>
-                <div class="summary-content">
+                <div class="max-h-[300px] overflow-y-auto p-2.5">
                     {#each selectedItems as item}
-                        <div class="summary-item">
-                            <div class="si-info">
-                                <span class="si-cat">{item.key.toUpperCase()}</span>
-                                <span class="si-name">{item.name}</span>
+                        <div class="flex justify-between items-center p-2.5 border-b border-dashed border-slate-100 last:border-none">
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-xs text-slate-500 font-bold bg-slate-100 px-1.5 py-0.5 rounded w-fit">{item.key.toUpperCase()}</span>
+                                <span class="text-sm font-semibold text-slate-800 max-w-[200px] whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
                             </div>
-                            <div class="si-right">
-                                <span class="si-price">{formatRupiah(item.price)}</span>
-                                <button class="btn-si-remove" on:click={() => removeSpecificItem(item.key)}>🗑️</button>
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-sm text-blue-600 font-bold">{formatRupiah(item.price)}</span>
+                                <button class="bg-none border-none cursor-pointer opacity-60 transition-transform hover:opacity-100 hover:scale-110" on:click={() => removeSpecificItem(item.key)}>🗑️</button>
                             </div>
                         </div>
                     {/each}
                 </div>
-                <div class="summary-footer-info">
+                <div class="p-3 bg-emerald-50 border-t border-emerald-100 text-right text-base text-emerald-800">
                     Total: <strong>{formatRupiah(totalPrice)}</strong>
                 </div>
             </div>
         {/if}
 
-        <div class="dock-bar">
-            <div class="dock-total">
-                <div class="total-label">Total</div>
-                <div class="total-price">{formatRupiah(totalPrice)}</div>
+        <div class="bg-white text-slate-800 p-3 rounded-2xl flex items-center gap-6 shadow-xl border border-slate-300 max-w-[90%] overflow-x-auto relative z-[102] pointer-events-auto max-md:flex-col max-md:gap-3 max-md:w-[95%] max-md:p-4">
+            <div class="flex flex-col items-end min-w-[120px] max-md:items-center max-md:w-full max-md:border-b max-md:border-slate-100 max-md:pb-2">
+                <div class="text-xs text-slate-500 uppercase tracking-wide font-semibold">Total</div>
+                <div class="text-xl font-extrabold text-slate-900 leading-tight">{formatRupiah(totalPrice)}</div>
             </div>
 
-            <div class="dock-divider"></div>
+            <div class="w-px h-[30px] bg-slate-200 max-md:hidden"></div>
 
-            <div class="dock-actions">
-                <button class="btn-dock-secondary" on:click={toggleSummary} class:active={showSummary}>
+            <div class="flex gap-2 items-center max-md:grid max-md:grid-cols-2 max-md:w-full">
+                <button 
+                    class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer flex items-center gap-2 transition-all hover:bg-slate-50 hover:border-slate-400 hover:text-slate-800 max-md:justify-center {showSummary ? 'bg-slate-200 border-slate-500' : ''}"
+                    on:click={toggleSummary}
+                >
                     {showSummary ? 'v Tutup' : '^ Summary'}
                     {#if totalItems > 0}
-                        <span class="badge-count">{totalItems}</span>
+                        <span class="bg-red-500 text-white text-xs font-bold px-1.5 rounded-full min-w-[16px] text-center">{totalItems}</span>
                     {/if}
                 </button>
                 
-                <button class="btn-dock-secondary" on:click={resetSelection}>
+                <button class="bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer flex items-center gap-2 transition-all hover:bg-slate-50 hover:border-slate-400 hover:text-slate-800 max-md:justify-center" on:click={resetSelection}>
                     ↻ Reset
                 </button>
 
-                <div class="spacer"></div>
+                <div class="w-2.5 max-md:hidden"></div>
 
-                <button class="btn-dock-primary" on:click={handleAddToCart} disabled={isAddingToCart}>
+                <button class="bg-emerald-500 border border-emerald-600 text-white px-4.5 py-2.5 rounded-md text-sm font-semibold cursor-pointer whitespace-nowrap shadow-sm transition-all hover:bg-emerald-600 active:scale-95 disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed max-md:justify-center" on:click={handleAddToCart} disabled={isAddingToCart}>
                     {isAddingToCart ? 'Menyimpan...' : '🛒 Tambah'}
                 </button>
                 
-                <button class="btn-dock-primary checkout" on:click={handleDirectCheckout} disabled={isAddingToCart}>
+                <button class="bg-green-600 border border-green-700 text-white px-6 py-2.5 rounded-md text-sm font-bold cursor-pointer shadow-md transition-all hover:bg-green-700 active:scale-95 disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed max-md:col-span-2 max-md:justify-center" on:click={handleDirectCheckout} disabled={isAddingToCart}>
                     {isAddingToCart ? '...' : '🧾 Checkout'}
                 </button>
             </div>
         </div>
     </div>
 {/if}
-
-<style>
-    /* Global & Layout - Font Size Basis 16px */
-    :global(body) { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f7f7f7; color: #1f2937; font-size: 16px; }
-    
-    .container { max-width: 95%; margin: 0 auto; padding: 40px 20px 100px 20px; }
-    
-    /* breadcrumb wrapper */
-    .breadcrumb-wrapper { width: 95%; margin: 20px auto; padding: 0; display: flex; justify-content: flex-start; position: relative; z-index: 1; }
-    .breadcrumb-pill { display: inline-flex; align-items: center; gap: 10px; background-color: #0f172a; border-radius: 50px; padding: 10px 24px; font-size: 0.9rem; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.05); }
-    .breadcrumb-link { color: #94a3b8; text-decoration: none; cursor: pointer; transition: color 0.2s; font-family: inherit; }
-    .breadcrumb-link:hover { color: #fff; }
-    .breadcrumb-sep { color: #475569; font-size: 0.8rem; }
-    .breadcrumb-current { color: #ff0055; font-weight: 700; }
-
-    .category-page { background: #f7f7f7; min-height: 100vh; font-family: inherit; }
-
-    .header-section { margin-bottom: 40px; text-align: center; font-family: inherit; }
-    .header-section h1 { font-size: 2.5rem; font-weight: 800; color: #1f2d3d; margin: 0 0 12px; font-family: inherit; }
-    .header-section p { font-size: 1.1rem; color: #64748b; margin: 0; font-family: inherit; }
-
-    .simulation-wrapper { display: grid; grid-template-columns: 320px 1fr; gap: 28px; } 
-    
-    /* SIDEBAR */
-    .sidebar { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; height: fit-content; position: sticky; top: 20px; z-index: 10; }
-    .sidebar-section-title { font-size: 1rem; font-weight: 700; color: #64748b; margin: 0 0 12px 4px; letter-spacing: 0.5px; }
-    .mt-4 { margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
-
-    .nav-list { display: flex; flex-direction: column; gap: 8px; }
-
-    .nav-item { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #e2e8f0; padding: 14px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: left; position: relative; overflow: hidden; }
-    .nav-item:hover { border-color: #cbd5e1; background: #f8fafc; }
-    .nav-item.active { background: #eff6ff; border-color: #bfdbfe; border-left: 5px solid #dc2626; padding-left: 11px; }
-
-    .nav-icon-box { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; border-radius: 8px; color: #475569; }
-    .nav-item.active .nav-icon-box { background: #dbeafe; color: #2563eb; }
-    .nav-item.filled .nav-icon-box { background: #2563eb; color: #fff; }
-
-    .nav-text { flex: 1; overflow: hidden; }
-    .nav-label { font-weight: 700; font-size: 1.1rem; color: #334155; }
-    .nav-sublabel { font-size: 0.9rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* Content Panel */
-    .content-panel { background: #fff; padding: 28px; border-radius: 12px; border: 1px solid #e5e7eb; }
-    .content-header { margin-bottom: 24px; }
-    .content-header h2 { margin: 0 0 16px; font-size: 1.8rem; font-weight: 800; color: #0f172a; }
-    
-    .filter-controls { display: flex; gap: 16px; width: 100%; align-items: center; flex-wrap: wrap; }
-    .search-wrapper { flex: 1; min-width: 250px; }
-    
-    .search-input { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; font-size: 1.05rem; box-sizing: border-box; }
-    .search-input:focus { outline: none; border-color: #3b82f6; background: #fff; }
-
-    .select-group { display: flex; gap: 12px; }
-    .light-select { padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; font-size: 1.05rem; cursor: pointer; min-width: 160px; }
-
-    .compatibility-alert { background: #ecfdf5; color: #065f46; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #a7f3d0; font-size: 1rem; }
-    
-    .product-list { display: flex; flex-direction: column; gap: 16px; }
-    
-    .product-card { display: flex; align-items: center; gap: 20px; background: #fff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; transition: all 0.2s; }
-    .product-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08); }
-    .product-card.selected { border-color: #ef4444; background: #fef2f2; }
-    
-    .prod-img { font-size: 2.5rem; display: flex; align-items: center; justify-content: center; width: 60px; }
-    .prod-info { flex: 1; }
-    
-    .prod-name { font-weight: 700; font-size: 1.2rem; color: #1e293b; margin-bottom: 6px; }
-    .prod-specs { font-size: 1rem; color: #64748b; display: flex; gap: 12px; }
-    .brand-badge { font-weight: 600; color: #475569; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 0.9rem; }
-    
-    .prod-action { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 120px; }
-    .prod-price { font-weight: 700; color: #2563eb; font-size: 1.3rem; }
-    
-    .btn-select { padding: 10px 24px; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
-    .btn-select:hover { background: #f1f5f9; border-color: #94a3b8; }
-    .btn-select.remove { background: #ef4444; color: #fff; border-color: #ef4444; }
-    .btn-select.remove:hover { background: #dc2626; }
-
-    .empty-state { text-align: center; padding: 50px 20px; color: #94a3b8; font-size: 1.1rem; }
-
-    /* --- FLOATING DOCK STYLE --- */
-    .floating-dock-container { position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; align-items: flex-end; z-index: 100; pointer-events: none; }
-
-    .dock-bar { background-color: #ffffff; color: #1e293b; padding: 12px 24px; border-radius: 16px; display: flex; align-items: center; gap: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); pointer-events: auto; border: 1px solid #cbd5e1; max-width: 90%; overflow-x: auto; position: relative; z-index: 102; }
-
-    .dock-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.2); pointer-events: auto; z-index: 101; }
-
-    .summary-popup { position: absolute; bottom: 85px; background: #fff; width: 400px; max-width: 90vw; border-radius: 12px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; pointer-events: auto; z-index: 102; display: flex; flex-direction: column; overflow: hidden; }
-
-    .summary-header { padding: 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-    .summary-header h3 { margin: 0; font-size: 1rem; color: #334155; }
-    .btn-close-summary { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94a3b8; }
-
-    .summary-content { max-height: 300px; overflow-y: auto; padding: 10px; }
-
-    .summary-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px dashed #f1f5f9; }
-    .summary-item:last-child { border-bottom: none; }
-
-    .si-info { display: flex; flex-direction: column; gap: 2px; }
-    .si-cat { font-size: 0.7rem; color: #64748b; font-weight: 700; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; width: fit-content; }
-    .si-name { font-size: 0.9rem; font-weight: 600; color: #1e293b; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .si-right { display: flex; align-items: center; gap: 10px; }
-    .si-price { font-size: 0.9rem; color: #2563eb; font-weight: 700; }
-    .btn-si-remove { background: none; border: none; cursor: pointer; opacity: 0.6; transition: 0.2s; }
-    .btn-si-remove:hover { opacity: 1; transform: scale(1.1); }
-
-    .summary-footer-info { padding: 12px 16px; background: #f0fdf4; border-top: 1px solid #dcfce7; text-align: right; font-size: 1rem; color: #166534; }
-
-    .dock-total { display: flex; flex-direction: column; align-items: flex-end; min-width: 120px; }
-    .total-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-    .total-price { font-size: 1.25rem; font-weight: 800; color: #0f172a; line-height: 1.2; }
-
-    .dock-divider { width: 1px; height: 30px; background-color: #e2e8f0; }
-
-    .dock-actions { display: flex; gap: 8px; align-items: center; }
-
-    .spacer { width: 10px; }
-
-    .btn-dock-secondary { background: #fff; border: 1px solid #cbd5e1; color: #475569; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-    .btn-dock-secondary:hover, .btn-dock-secondary.active { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
-    .btn-dock-secondary.active { background: #e2e8f0; border-color: #64748b; }
-
-    .badge-count { background-color: #ef4444; color: white; font-size: 0.75rem; font-weight: 700; padding: 2px 6px; border-radius: 99px; min-width: 16px; text-align: center; }
-
-    .btn-dock-primary { background-color: #10b981; border: 1px solid #059669; color: #fff; padding: 9px 18px; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: transform 0.1s, background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .btn-dock-primary:hover { background-color: #059669; }
-    .btn-dock-primary:active { transform: scale(0.95); }
-    .btn-dock-primary:disabled { background-color: #9ca3af; border-color: #9ca3af; cursor: not-allowed; transform: none; }
-
-    .btn-dock-primary.checkout { background-color: #16a34a; font-weight: 700; padding: 9px 24px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3); }
-
-    @media (max-width: 1024px) {
-        .simulation-wrapper { grid-template-columns: 1fr; }
-        .sidebar { position: static; margin-bottom: 20px; }
-        .container { padding: 18px; } 
-    }
-    @media (max-width: 768px) {
-        .floating-dock-container { bottom: 10px; }
-        .dock-bar { flex-direction: column; gap: 12px; width: 95%; padding: 16px; border: 1px solid #e2e8f0; }
-        .dock-divider { display: none; }
-        .dock-total { align-items: center; width: 100%; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
-        .dock-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
-        .spacer { display: none; }
-        .btn-dock-secondary, .btn-dock-primary { justify-content: center; }
-        .btn-dock-primary.checkout { grid-column: span 2; }
-        .summary-popup { bottom: 20px; width: 95%; }
-        .container, .breadcrumb-container { padding: 0 16px; }
-        .header-section h1 { font-size: 2rem; }
-        .breadcrumb-pill { padding: 8px 16px; font-size: 0.85rem; }
-    }
-    @media (max-width: 640px) {
-        .filter-controls { flex-direction: column; align-items: stretch; }
-        .select-group { width: 100%; }
-        .light-select { flex: 1; }
-        .header-section h1 { font-size: 2.2rem; }
-    }
-</style>
