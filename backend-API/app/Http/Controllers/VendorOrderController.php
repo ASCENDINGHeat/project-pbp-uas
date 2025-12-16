@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\VendorOrder;
-use App\Http\Resources\VendorOrderResource;
+// use App\Http\Resources\VendorOrderResource; // Disable Resource to ensure raw data access
 
 class VendorOrderController extends Controller
 {
@@ -22,15 +22,13 @@ class VendorOrderController extends Controller
         }
 
         // Fetch orders belonging to this vendor
-        // Eager load:
-        // - orderItems.product: to show what items were bought
-        // - parentOrder.user: to show who the customer is
+        // We return the Paginator directly to ensure 'parentOrder' relationship is included in the JSON
         $orders = VendorOrder::where('vendor_id', $user->vendor->id)
-            ->with(['orderItems.product', 'parentOrder.user'])
+            ->with(['orderItems.product', 'parentOrder.user']) // Eager load necessary data
             ->latest()
             ->paginate(15);
 
-        return VendorOrderResource::collection($orders);
+        return response()->json($orders);
     }
 
     /**
@@ -53,7 +51,7 @@ class VendorOrderController extends Controller
             return response()->json(['message' => 'Order not found or unauthorized.'], 404);
         }
 
-        return new VendorOrderResource($order);
+        return response()->json(['data' => $order]);
     }
 
     /**
@@ -81,9 +79,10 @@ class VendorOrderController extends Controller
             'shipping_status' => $request->shipping_status,
         ]);
 
+        // Return the updated order directly
         return response()->json([
             'message' => 'Order status updated successfully.',
-            'data' => new VendorOrderResource($order),
+            'data' => $order,
         ]);
     }
 }

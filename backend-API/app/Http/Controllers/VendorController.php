@@ -76,6 +76,11 @@ class VendorController extends Controller
     public function vendorProfile()
     {
         $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $vendor = $user->vendor;
 
         if (!$vendor){
