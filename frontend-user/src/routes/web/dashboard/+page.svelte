@@ -25,7 +25,6 @@
     let prodStock: number | null = null;
     let prodPrice: number | null = null;
     let prodDesc = '';
-    
     // --- COMPATIBILITY FEATURES ---
     let prodSocket = '';
     let prodMemory = '';
@@ -33,6 +32,9 @@
     let prodImageFile: File | null = null;
     let prodImagePreview: string | null = null;
     let isSubmitting = false;
+
+    // Loading state for specific order buttons
+    let processingOrderId: number | null = null;
 
     // --- FORMATTERS ---
     const formatCurrency = (val: number) => 
@@ -73,6 +75,7 @@
 
             // 3. Fetch Orders
             await fetchOrders();
+
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         }
@@ -106,13 +109,52 @@
                 myOrders = Array.isArray(data) ? data : (data.data || []);
 
                 // Calculate Stats
-                const pending = myOrders.filter((o: any) => o.status === 'pending').length;
-                const completed = myOrders.filter((o: any) => o.status === 'completed' || o.status === 'shipped').length;
+                const pending = myOrders.filter((o: any) => o.shipping_status === 'pending').length;
+                const completed = myOrders.filter((o: any) => o.shipping_status === 'delivered').length;
 
                 dashboardStats[1].value = pending.toString();
                 dashboardStats[2].value = completed.toString();
             }
         } catch (e) { console.error(e); }
+    }
+
+    // --- ORDER ACTIONS ---
+    async function updateOrderStatus(orderId: number, newStatus: string) {
+        if (!confirm(`Ubah status pesanan #${orderId} menjadi "${newStatus}"?`)) return;
+
+        processingOrderId = orderId;
+        try {
+            const res = await fetch(`${PUBLIC_API_URL}/vendor/orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ shipping_status: newStatus })
+            });
+
+            if (res.ok) {
+                // Update local state directly to reflect changes UI
+                myOrders = myOrders.map(o => 
+                    o.id === orderId ? { ...o, shipping_status: newStatus } : o
+                );
+                alert(`Status berhasil diubah menjadi ${newStatus}`);
+                // Re-calculate stats
+                const pending = myOrders.filter((o: any) => o.shipping_status === 'pending').length;
+                const completed = myOrders.filter((o: any) => o.shipping_status === 'delivered').length;
+                dashboardStats[1].value = pending.toString();
+                dashboardStats[2].value = completed.toString();
+            } else {
+                const err = await res.json();
+                alert(err.message || 'Gagal mengubah status');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Gagal menghubungi server');
+        } finally {
+            processingOrderId = null;
+        }
     }
 
     // --- ACTIONS ---
@@ -263,15 +305,33 @@
                                             <th>Status</th>
                                             <th>Tanggal</th>
                                             <th class="text-right">Total</th>
+                                            <th class="text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {#each recentOrders as order}
                                             <tr>
                                                 <td class="order-id">#{order.id}</td>
-                                                <td><span class="status-badge {order.status?.toLowerCase()}">{order.status}</span></td>
+                                                <td><span class="status-badge {order.shipping_status?.toLowerCase()}">{order.shipping_status}</span></td>
                                                 <td>{new Date(order.created_at).toLocaleDateString('id-ID')}</td>
                                                 <td class="text-right font-bold">{formatCurrency(Number(order.total_price || 0))}</td>
+                                                <td class="text-center">
+                                                    {#if order.shipping_status === 'pending'}
+                                                        <button class="btn-action process" disabled={processingOrderId === order.id} on:click={() => updateOrderStatus(order.id, 'processing')}>
+                                                            {processingOrderId === order.id ? '...' : 'Proses'}
+                                                        </button>
+                                                    {:else if order.shipping_status === 'processing'}
+                                                        <button class="btn-action ship" disabled={processingOrderId === order.id} on:click={() => updateOrderStatus(order.id, 'shipped')}>
+                                                            {processingOrderId === order.id ? '...' : 'Kirim'}
+                                                        </button>
+                                                    {:else if order.shipping_status === 'shipped'}
+                                                        <button class="btn-action done" disabled={processingOrderId === order.id} on:click={() => updateOrderStatus(order.id, 'delivered')}>
+                                                            {processingOrderId === order.id ? '...' : 'Selesai'}
+                                                        </button>
+                                                    {:else}
+                                                        <span class="text-muted">-</span>
+                                                    {/if}
+                                                </td>
                                             </tr>
                                         {/each}
                                     </tbody>
@@ -472,7 +532,7 @@
                                             <th>Customer</th>
                                             <th>Status</th>
                                             <th class="text-right">Total</th>
-                                            <th>Aksi</th>
+                                            <th class="text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -480,11 +540,25 @@
                                             <tr>
                                                 <td class="order-id">#{order.id}</td>
                                                 <td>{new Date(order.created_at).toLocaleDateString('id-ID')}</td>
-                                                <td>{order.user?.name || 'Customer'}</td>
-                                                <td><span class="status-badge {order.status?.toLowerCase()}">{order.status}</span></td>
+                                                <td>{order.parent_order?.user?.name || 'Customer'}</td>
+                                                <td><span class="status-badge {order.shipping_status?.toLowerCase()}">{order.shipping_status}</span></td>
                                                 <td class="text-right font-bold">{formatCurrency(Number(order.total_price))}</td>
-                                                <td>
-                                                    <button style="border:none; background:none; color:#8E42E1; cursor:pointer; font-weight:600;">Detail</button>
+                                                <td class="text-center">
+                                                    {#if order.shipping_status === 'pending'}
+                                                        <button class="btn-action process" disabled={processingOrderId === order.id} on:click={() => updateOrderStatus(order.id, 'processing')}>
+                                                            {processingOrderId === order.id ? '...' : 'Proses'}
+                                                        </button>
+                                                    {:else if order.shipping_status === 'processing'}
+                                                        <button class="btn-action ship" disabled={processingOrderId === order.id} on:click={() => updateOrderStatus(order.id, 'shipped')}>
+                                                            {processingOrderId === order.id ? '...' : 'Kirim'}
+                                                        </button>
+                                                    {:else if order.shipping_status === 'shipped'}
+                                                        <button class="btn-action done" disabled={processingOrderId === order.id} on:click={() => updateOrderStatus(order.id, 'delivered')}>
+                                                            {processingOrderId === order.id ? '...' : 'Selesai'}
+                                                        </button>
+                                                    {:else}
+                                                        <span class="text-muted">-</span>
+                                                    {/if}
                                                 </td>
                                             </tr>
                                         {/each}
@@ -545,9 +619,22 @@
     td { padding: 15px 20px; border-bottom: 1px solid #eee; font-size: 0.95rem; color: #333; }
     tr:last-child td { border-bottom: none; }
     .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: capitalize; }
-    .status-badge.completed, .status-badge.success { background: #4ADE80; color: white; }
-    .status-badge.pending, .status-badge.processing { background: #fbbf24; color: #fff; }
+    .status-badge.delivered, .status-badge.success { background: #4ADE80; color: white; }
+    .status-badge.pending { background: #fbbf24; color: #fff; }
+    .status-badge.processing { background: #3b82f6; color: #fff; }
+    .status-badge.shipped { background: #8b5cf6; color: #fff; }
     .status-badge.cancelled { background: #f87171; color: white; }
+
+    /* Buttons */
+    .btn-action { padding: 6px 12px; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s; color: white; }
+    .btn-action.process { background-color: #3b82f6; } /* Blue */
+    .btn-action.process:hover { background-color: #2563eb; }
+    .btn-action.ship { background-color: #8b5cf6; } /* Purple */
+    .btn-action.ship:hover { background-color: #7c3aed; }
+    .btn-action.done { background-color: #10b981; } /* Green */
+    .btn-action.done:hover { background-color: #059669; }
+    .btn-action:disabled { background-color: #ccc; cursor: not-allowed; }
+    .text-muted { color: #999; font-style: italic; }
 
     /* --- STYLE UNTUK GRID PRODUK & KOTAK TAMBAH --- */
     .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }

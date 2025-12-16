@@ -6,7 +6,8 @@
     import { PUBLIC_API_URL } from '$env/static/public';
 
     // --- Types ---
-    type CategoryKey = 'processor' | 'motherboard' | 'cooler' | 'ram' | 'storage' | 'vga' | 'psu' | 'casing' | 'monitor';
+    type CategoryKey = 'processor' | 'motherboard' | 'cooler' | 'ram' | 'storage' |
+        'vga' | 'psu' | 'casing' | 'monitor';
 
     interface Product {
         id: string;
@@ -28,15 +29,15 @@
     }
 
     // --- State Management ---
-    let products: Product[] = []; // Changed: Dynamic Array
+    let products: Product[] = [];
     let isLoading = true;
+    let isAddingToCart = false; // New State for API loading
     
     let activeCategory: CategoryKey = 'processor';
     let brandFilter: string = 'ALL'; 
     let sortOrder: 'price-asc' | 'price-desc' = 'price-asc'; 
     let searchQuery = '';
     let showSummary = false;
-
     let selectionMap: Record<CategoryKey, Product | null> = {
         processor: null, motherboard: null, cooler: null, ram: null, storage: null, vga: null, psu: null, casing: null, monitor: null
     };
@@ -48,17 +49,13 @@
 
     async function fetchAllProducts() {
         try {
-            // Fetch plenty of items to populate the simulator
             const res = await fetch(`${PUBLIC_API_URL}/product?per_page=100`);
             if (res.ok) {
                 const data = await res.json();
                 const rawProducts = data.data || [];
 
-                // MAP API DATA TO SIMULATOR FORMAT
                 products = rawProducts.map((p: any) => {
-                    // Extract details safely
                     const details = p.details || {};
-                    // Infer brand from title if not set (simple heuristic)
                     let brand = 'Generic';
                     const titleUpper = p.title.toUpperCase();
                     if (titleUpper.includes('AMD')) brand = 'AMD';
@@ -73,7 +70,7 @@
                         name: p.title,
                         price: Number(p.price),
                         category: details.category || 'unknown',
-                        specs: details.specs || '', // Crucial: This comes from your Dashboard logic
+                        specs: details.specs || '',
                         brand: brand,
                         imagePlaceholder: p.image_url || '/images/placeholder.png'
                     };
@@ -86,7 +83,7 @@
         }
     }
 
-    // --- Hardware Definitions (Now uses reactive 'products' array) ---
+    // --- Hardware Definitions ---
     $: hardwareData = [
         {
             id: 'processor', group: 'Utama', label: 'Processor', subLabel: 'CPU untuk sistem', 
@@ -135,7 +132,6 @@
 
     $: currentCategoryData = hardwareData.find(cat => cat.id === activeCategory);
 
-    // --- LOGIC DROP DOWN BRAND ---
     $: availableBrands = (() => {
         const extracted = (currentCategoryData?.options || [])
             .map(p => (p.brand || '').trim())
@@ -143,47 +139,32 @@
         return [...new Set(extracted)].sort();
     })();
 
-    // --- LOGIC FILTERING & SORTING (INTEGRATED COMPATIBILITY) ---
+    // --- LOGIC FILTERING & SORTING ---
     $: filteredProducts = (currentCategoryData?.options || [])
         .filter(p => {
-            // 1. Search Logic
             const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-            
-            // 2. Brand Logic
             let matchBrand = true;
             if (brandFilter !== 'ALL') {
                 const targetBrand = brandFilter.toUpperCase().trim();
                 const productBrand = (p.brand || '').toUpperCase().trim();
                 const productName = (p.name || '').toUpperCase();
-                const isBrandMatch = productBrand === targetBrand;
-                const isNameMatch = productName.includes(targetBrand);
-                matchBrand = isBrandMatch || isNameMatch;
+                matchBrand = productBrand === targetBrand || productName.includes(targetBrand);
             }
 
-            // 3. Socket & Memory Compatibility Logic
             let matchCompatibility = true;
-            
-            // A. Check Motherboard vs Processor (Socket)
             if (activeCategory === 'motherboard' && selectionMap.processor) {
                 const cpuSpecs = (selectionMap.processor.specs || '').toUpperCase();
                 const moboSpecs = (p.specs || '').toUpperCase();
-                
-                // If CPU is AM5, Mobo must be AM5
                 if (cpuSpecs.includes('AM5') && !moboSpecs.includes('AM5')) matchCompatibility = false;
-                // If CPU is LGA1700, Mobo must be LGA1700
                 if (cpuSpecs.includes('LGA1700') && !moboSpecs.includes('LGA1700')) matchCompatibility = false;
                 if (cpuSpecs.includes('AM4') && !moboSpecs.includes('AM4')) matchCompatibility = false;
             }
-
-            // B. Check RAM vs Motherboard (DDR Type)
             if (activeCategory === 'ram' && selectionMap.motherboard) {
                 const moboSpecs = (selectionMap.motherboard.specs || '').toUpperCase();
                 const ramSpecs = (p.specs || '').toUpperCase();
-
                 if (moboSpecs.includes('DDR5') && !ramSpecs.includes('DDR5')) matchCompatibility = false;
                 if (moboSpecs.includes('DDR4') && !ramSpecs.includes('DDR4')) matchCompatibility = false;
             }
-
             return matchSearch && matchBrand && matchCompatibility;
         })
         .sort((a, b) => {
@@ -196,7 +177,6 @@
     $: selectedItems = Object.entries(selectionMap)
         .filter(([_, item]) => item !== null)
         .map(([key, item]) => ({ key: key as CategoryKey, ...item! }));
-    
     $: totalItems = selectedItems.length;
     $: totalPrice = selectedItems.reduce((acc, item) => acc + item.price, 0);
 
@@ -212,9 +192,6 @@
             selectionMap[activeCategory] = null;
         } else {
             selectionMap[activeCategory] = item;
-            
-            // Auto-advance logic (Optional UX improvement)
-            // if (activeCategory === 'processor') changeCategory('motherboard');
         }
         selectionMap = selectionMap;
     }
@@ -239,52 +216,71 @@
         showSummary = !showSummary;
     }
 
-    function handleAddToCart() {
+    // --- FIX: ADD TO CART VIA API ---
+    async function handleAddToCart() {
         if (totalItems === 0) {
             alert('Belum ada komponen yang dipilih!');
             return;
         }
 
-        let savedNext: any[] = [];
-        cart.update((current) => {
-            const next = Array.isArray(current) ? [...current] : [];
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            alert('Anda harus login untuk menyimpan keranjang.');
+            goto('/web/login');
+            return;
+        }
 
-            selectedItems.forEach((it) => {
-                const existingIndex = next.findIndex((ci) => ci.id === it.id);
-                if (existingIndex >= 0) {
-                    const existing = next[existingIndex];
-                    next[existingIndex] = {
-                        ...existing,
-                        quantity: (Number(existing.quantity ?? 0) || 0) + 1
-                    };
+        isAddingToCart = true;
+        let successCount = 0;
+        let failCount = 0;
+
+        // Loop through items and POST to backend
+        for (const item of selectedItems) {
+            try {
+                const res = await fetch(`${PUBLIC_API_URL}/cart/${item.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ quantity: 1 })
+                });
+
+                if (res.ok) {
+                    successCount++;
                 } else {
-                    next.push({
-                        id: it.id,
-                        name: it.name,
-                        price: it.price,
-                        image: (it as any).imagePlaceholder || '/images/placeholder.png',
-                        quantity: 1
-                    });
+                    const data = await res.json();
+                    console.error(`Gagal add ${item.name}:`, data);
+                    failCount++;
                 }
-            });
-            savedNext = next;
-            return next;
-        });
-        
-        try {
-            localStorage.setItem('cart', JSON.stringify(savedNext));
-        } catch (e) {}
+            } catch (e) {
+                console.error(`Network error ${item.name}:`, e);
+                failCount++;
+            }
+        }
 
-        alert(`${totalItems} komponen berhasil ditambahkan ke keranjang!`);
+        isAddingToCart = false;
+
+        if (successCount > 0) {
+            alert(`Berhasil menambahkan ${successCount} item ke keranjang!`);
+        }
+        if (failCount > 0) {
+            alert(`Gagal menambahkan ${failCount} item. Cek console atau stok barang.`);
+        }
     }
 
-    function handleDirectCheckout() {
+    async function handleDirectCheckout() {
         if (totalItems === 0) {
             alert('Silakan pilih komponen terlebih dahulu.');
             return;
         }
-        handleAddToCart();
-        goto('/web/co');
+        
+        // Wait for API Add process
+        await handleAddToCart();
+        
+        // Redirect to Cart page to fetch the real Cart IDs from DB
+        goto('/web/cart');
     }
 
 </script>
@@ -370,7 +366,6 @@
             <main class="content-panel">
                 <div class="content-header">
                     <h2>{currentCategoryData?.label}</h2>
-                    
                     <div class="filter-controls">
                         <div class="search-wrapper">
                             <input 
@@ -514,12 +509,12 @@
 
                 <div class="spacer"></div>
 
-                <button class="btn-dock-primary" on:click={handleAddToCart}>
-                    🛒 Tambah
+                <button class="btn-dock-primary" on:click={handleAddToCart} disabled={isAddingToCart}>
+                    {isAddingToCart ? 'Menyimpan...' : '🛒 Tambah'}
                 </button>
                 
-                <button class="btn-dock-primary checkout" on:click={handleDirectCheckout}>
-                    🧾 Checkout
+                <button class="btn-dock-primary checkout" on:click={handleDirectCheckout} disabled={isAddingToCart}>
+                    {isAddingToCart ? '...' : '🧾 Checkout'}
                 </button>
             </div>
         </div>
@@ -654,6 +649,7 @@
     .btn-dock-primary { background-color: #10b981; border: 1px solid #059669; color: #fff; padding: 9px 18px; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: transform 0.1s, background-color 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .btn-dock-primary:hover { background-color: #059669; }
     .btn-dock-primary:active { transform: scale(0.95); }
+    .btn-dock-primary:disabled { background-color: #9ca3af; border-color: #9ca3af; cursor: not-allowed; transform: none; }
 
     .btn-dock-primary.checkout { background-color: #16a34a; font-weight: 700; padding: 9px 24px; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3); }
 

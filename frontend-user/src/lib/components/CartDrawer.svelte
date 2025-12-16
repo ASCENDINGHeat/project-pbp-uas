@@ -7,8 +7,56 @@
 
 	export let isOpen = false;
 	const dispatch = createEventDispatcher();
+    
+    let isLoading = false;
 
-	function close() { dispatch('close'); }
+	function close() { 
+        dispatch('close');
+	}
+
+    // --- SYNC CART WHEN DRAWER OPENS ---
+    // This ensures items added via API (e.g. from Simulator) are visible here
+    $: if (isOpen) {
+        fetchCart();
+    }
+
+    async function fetchCart() {
+        isLoading = true;
+        try {
+            const token = localStorage.getItem('auth_token');
+            // If no token, we rely on local store or empty state
+            if (!token) {
+                isLoading = false;
+                return;
+            }
+
+            const res = await fetch(`${PUBLIC_API_URL}/cart`, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Accept': 'application/json' 
+                }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                // Map API response to CartItem type
+                const mappedItems = (data.data || []).map((item: any) => ({
+                    id: String(item.id),
+                    product_id: item.product_id,
+                    name: item.product?.title || 'Unknown Product',
+                    price: Number(item.product?.price || 0),
+                    image: item.product?.image_url || '/images/placeholder.png',
+                    quantity: item.quantity,
+                    stock: item.product?.stock_quantity
+                }));
+                cart.set(mappedItems);
+            }
+        } catch (e) {
+            console.error("Failed to sync cart:", e);
+        } finally {
+            isLoading = false;
+        }
+    }
 
 	$: subtotal = $cart.reduce((sum, item) => sum + (Number(item.price ?? 0) * (item.quantity ?? 1)), 0);
 
@@ -54,6 +102,7 @@
 	async function updateQuantity(item: any, change: number) {
 		const newQty = item.quantity + change;
 		if (newQty < 1) return;
+        
 		if (item.stock !== undefined && newQty > item.stock) {
 			alert(`Stok hanya tersedia ${item.stock}`);
 			return;
@@ -75,12 +124,14 @@
 				body: JSON.stringify({ quantity: newQty })
 			});
 		} catch (e) {
+            // Rollback quantity on error
 			cart.update(items => items.map(i => i.id === item.id ? { ...i, quantity: oldQty } : i));
 		}
 	}
 
 	function handleCheckout() {
 		if ($cart.length === 0) return alert("Keranjang kosong!");
+		// Select all items for checkout
 		selectedItemIds.set($cart.map(i => String(i.id)));
 		close();
 		goto('/web/co');
@@ -97,7 +148,9 @@
 		</header>
 
 		<div class="drawer-body">
-			{#if $cart.length === 0}
+            {#if isLoading}
+                <div class="loading-state">Memuat data...</div>
+			{:else if $cart.length === 0}
 				<div class="empty-state">
 					<p>Keranjang kosong.</p>
 					<button class="btn-shop" on:click={() => { close(); goto('/web'); }}>Belanja</button>
@@ -137,7 +190,6 @@
 {/if}
 
 <style>
-	/* ... Style sama seperti sebelumnya ... */
 	.backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
 	.cart-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 350px; background: #1e293b; color: white; z-index: 1001; display: flex; flex-direction: column; box-shadow: -4px 0 15px rgba(0,0,0,0.3); }
 	.drawer-header { padding: 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
@@ -161,5 +213,6 @@
 	.btn-view-cart { background: #334155; color: white; }
 	.btn-checkout { background: #8E42E1; color: white; }
 	.empty-state { text-align: center; padding-top: 40px; color: #94a3b8; }
+    .loading-state { text-align: center; padding-top: 40px; color: #cbd5e1; }
 	.btn-shop { margin-top: 15px; padding: 10px 20px; background: #8E42E1; color: white; border: none; border-radius: 6px; cursor: pointer; }
 </style>
