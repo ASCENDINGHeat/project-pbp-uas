@@ -2,7 +2,6 @@
     import { goto } from '$app/navigation';
     import { onMount, onDestroy } from 'svelte';
     import { PUBLIC_API_URL } from '$env/static/public';
-    // Import Store
     import { user, isLoggedIn } from '$lib/stores/auth';
 
     let name = "";
@@ -43,7 +42,6 @@
                     address: address
                 })
             });
-
             const data = await response.json();
 
             if (!response.ok) {
@@ -53,16 +51,10 @@
                 }
                 throw new Error(data.message || 'Gagal mendaftar');
             } else {
-                // Register Sukses -> Auto Login
-                // 1. Simpan ke LocalStorage
                 localStorage.setItem('auth_token', data.access_token);
                 localStorage.setItem('user_data', JSON.stringify(data.user));
-
-                // 2. Update Store
                 user.set(data.user);
                 isLoggedIn.set(true);
-
-                // 3. Redirect
                 alert("Registrasi berhasil!");
                 goto('/web');
             }
@@ -86,73 +78,47 @@
     });
 </script>
 
-<div class="overlay">
-    <div class="register-container">
-        <div class="register-card" role="dialog" aria-modal="true" aria-label="Daftar">
-            <button class="close-btn" on:click={() => goto('/') } aria-label="Tutup">&times;</button>
+<div class="fixed inset-0 bg-slate-900/45 backdrop-blur-sm flex items-center justify-center z-[9999] p-5 box-border overflow-y-auto">
+    <div class="w-full max-w-[500px] my-auto">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl relative text-left" role="dialog" aria-modal="true" aria-label="Daftar">
+            <button class="absolute right-3 top-3 bg-transparent border-none text-2xl text-slate-500 cursor-pointer p-1.5 rounded-md hover:bg-slate-100 transition-colors" on:click={() => goto('/') } aria-label="Tutup">&times;</button>
 
-            <h1>Daftar Akun</h1>
+            <h1 class="text-3xl font-bold text-slate-800 m-0 mb-6 text-center">Daftar Akun</h1>
             
-            <form on:submit|preventDefault={handleRegister}>
-                <div class="form-group">
-                    <label for="name">Nama Lengkap</label>
-                    <input type="text" id="name" bind:value={name} placeholder="John Doe" required />
+            <form on:submit|preventDefault={handleRegister} class="flex flex-col gap-4">
+                <div>
+                    <label for="name" class="block mb-2 font-semibold text-sm text-slate-700">Nama Lengkap</label>
+                    <input type="text" id="name" bind:value={name} placeholder="John Doe" required class="w-full p-3 border border-slate-200 rounded-lg text-base box-border focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600" />
                 </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" bind:value={email} placeholder="your@email.com" required />
+                <div>
+                    <label for="email" class="block mb-2 font-semibold text-sm text-slate-700">Email</label>
+                    <input type="email" id="email" bind:value={email} placeholder="your@email.com" required class="w-full p-3 border border-slate-200 rounded-lg text-base box-border focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600" />
                 </div>
-                <div class="form-group">
-                    <label for="phone">Nomor HP</label>
-                    <input type="text" id="phone" bind:value={phoneNumber} placeholder="Contoh: 081234567890" required />
+                <div>
+                    <label for="phone" class="block mb-2 font-semibold text-sm text-slate-700">Nomor HP</label>
+                    <input type="text" id="phone" bind:value={phoneNumber} placeholder="Contoh: 081234567890" required class="w-full p-3 border border-slate-200 rounded-lg text-base box-border focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600" />
                 </div>
 
-                <div class="form-group">
-                    <label for="address">Alamat Lengkap</label>
-                    <input type="text" id="address" bind:value={address} placeholder="Masukkan alamat lengkap" required />
+                <div>
+                    <label for="address" class="block mb-2 font-semibold text-sm text-slate-700">Alamat Lengkap</label>
+                    <input type="text" id="address" bind:value={address} placeholder="Masukkan alamat lengkap" required class="w-full p-3 border border-slate-200 rounded-lg text-base box-border focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600" />
                 </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" bind:value={password} placeholder="••••••••" required />
+                <div>
+                    <label for="password" class="block mb-2 font-semibold text-sm text-slate-700">Password</label>
+                    <input type="password" id="password" bind:value={password} placeholder="••••••••" required class="w-full p-3 border border-slate-200 rounded-lg text-base box-border focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600" />
                 </div>
-                <div class="form-group">
-                    <label for="confirm">Konfirmasi Password</label>
-                    <input type="password" id="confirm" bind:value={confirmPassword} placeholder="••••••••" required />
+                <div>
+                    <label for="confirm" class="block mb-2 font-semibold text-sm text-slate-700">Konfirmasi Password</label>
+                    <input type="password" id="confirm" bind:value={confirmPassword} placeholder="••••••••" required class="w-full p-3 border border-slate-200 rounded-lg text-base box-border focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600" />
                 </div>
                 
-                <button type="submit" class="btn-submit" disabled={isLoading}>
+                <button type="submit" class="w-full p-3.5 bg-purple-600 text-white border-none rounded-lg font-bold text-base cursor-pointer mt-2 transition-colors hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed" disabled={isLoading}>
                     {isLoading ? 'Memproses...' : 'Daftar Sekarang'}
                 </button>
             </form>
 
-            <p class="login-link">Sudah punya akun? <a href="/login" on:click|preventDefault={() => goto('/login')}>Login di sini</a></p>
-            <a class="back-link" on:click={() => goto('/') }>Kembali ke Menu Utama</a>
+            <p class="text-center mt-5 text-slate-500 text-sm">Sudah punya akun? <a href="/login" class="text-purple-600 no-underline font-semibold hover:underline" on:click|preventDefault={() => goto('/login')}>Login di sini</a></p>
+            <a class="block mt-4 text-slate-400 no-underline text-sm cursor-pointer text-center hover:text-slate-600" on:click={() => goto('/') }>Kembali ke Menu Utama</a>
         </div>
     </div>
 </div>
-
-<style>
-    /* ... (Style tetap sama seperti file asli Anda) ... */
-    :global(body) { margin: 0; font-family: 'Segoe UI', sans-serif; }
-    .overlay {
-        position: fixed; inset: 0; background: rgba(15,15,20,0.45); backdrop-filter: blur(4px);
-        display: flex; align-items: center; justify-content: center; z-index: 9999;
-        padding: 20px; box-sizing: border-box; overflow-y: auto;
-    }
-    .register-container { width: 100%; max-width: 500px; margin: auto; }
-    .register-card { background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15); position: relative; text-align: left; }
-    .close-btn { position: absolute; right: 12px; top: 12px; background: transparent; border: none; font-size: 1.6rem; color: #666; cursor: pointer; padding: 6px; border-radius: 6px; }
-    .close-btn:hover { background: rgba(0,0,0,0.04); }
-    h1 { font-size: 2rem; font-weight: 700; color: #1f2d3d; margin: 0 0 25px; text-align: center; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 8px; font-weight: 600; color: #1f2d3d; font-size: 0.9rem; }
-    input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; }
-    input:focus { outline: none; border-color: #8E42E1; box-shadow: 0 0 0 3px rgba(142, 66, 225, 0.1); }
-    .btn-submit { width: 100%; padding: 14px; background: #8E42E1; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: background 0.2s; }
-    .btn-submit:hover { background: #7b3bcc; }
-    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
-    .login-link { text-align: center; margin-top: 20px; color: #666; font-size: 0.9rem; }
-    .login-link a { color: #8E42E1; text-decoration: none; font-weight: 600; }
-    .login-link a:hover { text-decoration: underline; }
-    .back-link { display: block; margin-top: 15px; color: #999; text-decoration: none; font-size: 0.85rem; cursor: pointer; text-align: center; }
-</style>
